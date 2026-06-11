@@ -1,5 +1,7 @@
 # Super Duper Screenshot
 
+[![Tests](https://github.com/centimano/super-duper-screenshot/actions/workflows/tests.yml/badge.svg)](https://github.com/centimano/super-duper-screenshot/actions/workflows/tests.yml)
+
 A lightweight, native screenshot capture and markup tool for macOS. It lives in
 your menu bar, captures stills via ScreenCaptureKit, and opens a fast annotation
 editor — arrows, callouts, step badges, blur, the works. Swift + SwiftUI, zero
