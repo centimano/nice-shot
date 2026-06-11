@@ -1,0 +1,25 @@
+#!/bin/bash
+# Build and package Super Duper Screenshot.app into dist/.
+set -euo pipefail
+cd "$(dirname "$0")"
+
+if [ ! -f Packaging/AppIcon.icns ]; then
+  echo "Generating app icon…"
+  swift Scripts/makeicon.swift
+fi
+
+swift build -c release
+
+APP="dist/Super Duper Screenshot.app"
+rm -rf "$APP"
+mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
+cp .build/release/SuperDuperScreenshot "$APP/Contents/MacOS/"
+cp Packaging/Info.plist "$APP/Contents/"
+if [ -f Packaging/AppIcon.icns ]; then
+  cp Packaging/AppIcon.icns "$APP/Contents/Resources/"
+fi
+
+# Ad-hoc sign so the Screen Recording permission sticks across rebuilds.
+codesign --force -s - "$APP"
+
+echo "Built: $APP"
