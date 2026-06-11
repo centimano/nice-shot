@@ -47,14 +47,21 @@ enum CaptureEngine {
         let image = try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: config)
 
         guard let rect else { return image }
-        let pixelRect = CGRect(
+        guard let cropped = image.cropping(to: pixelRect(for: rect, scale: scale)) else {
+            throw CaptureError.cropFailed
+        }
+        return cropped
+    }
+
+    /// Convert a selection in screen points (top-left origin) into the integral
+    /// pixel rect to crop from the captured image.
+    static func pixelRect(for rect: CGRect, scale: CGFloat) -> CGRect {
+        CGRect(
             x: (rect.minX * scale).rounded(.down),
             y: (rect.minY * scale).rounded(.down),
             width: (rect.width * scale).rounded(),
             height: (rect.height * scale).rounded()
         )
-        guard let cropped = image.cropping(to: pixelRect) else { throw CaptureError.cropFailed }
-        return cropped
     }
 
     /// Capture a single window cleanly (no overlapping content).

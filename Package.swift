@@ -1,13 +1,45 @@
-// swift-tools-version: 5.10
+// swift-tools-version: 6.0
 import PackageDescription
 
 let package = Package(
     name: "SuperDuperScreenshot",
     platforms: [.macOS(.v14)],
     targets: [
-        .executableTarget(
+        // All app code lives in this library so the test target can link it.
+        .target(
             name: "SuperDuperScreenshot",
-            path: "Sources"
-        )
+            path: "Sources",
+            swiftSettings: [.swiftLanguageMode(.v5)]
+        ),
+        // Thin executable: just the @main entry point.
+        .executableTarget(
+            name: "SuperDuperScreenshotApp",
+            dependencies: ["SuperDuperScreenshot"],
+            path: "App",
+            swiftSettings: [.swiftLanguageMode(.v5)]
+        ),
+        // Tests are an executable (`swift run SuperDuperScreenshotTests`), not
+        // a .testTarget: the Command Line Tools' test helper silently runs
+        // nothing, so Tests/TestMain.swift invokes Swift Testing directly.
+        // The extra search paths locate Testing.framework when only the
+        // Command Line Tools are installed; harmless with full Xcode.
+        .executableTarget(
+            name: "SuperDuperScreenshotTests",
+            dependencies: ["SuperDuperScreenshot"],
+            path: "Tests",
+            swiftSettings: [
+                .swiftLanguageMode(.v5),
+                .unsafeFlags(["-F", "/Library/Developer/CommandLineTools/Library/Developer/Frameworks"]),
+            ],
+            linkerSettings: [
+                .unsafeFlags([
+                    "-F", "/Library/Developer/CommandLineTools/Library/Developer/Frameworks",
+                    "-Xlinker", "-rpath",
+                    "-Xlinker", "/Library/Developer/CommandLineTools/Library/Developer/Frameworks",
+                    "-Xlinker", "-rpath",
+                    "-Xlinker", "/Library/Developer/CommandLineTools/Library/Developer/usr/lib",
+                ])
+            ]
+        ),
     ]
 )

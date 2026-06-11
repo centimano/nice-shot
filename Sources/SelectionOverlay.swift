@@ -76,6 +76,24 @@ final class SelectionOverlayController {
     }
 }
 
+// MARK: - Coordinate conversion
+
+/// SCWindow frames arrive in global CoreGraphics coordinates (origin at the
+/// top-left of the primary display, y growing downward). Overlay views are
+/// flipped and local to one screen, so picker rects must be converted.
+enum ScreenGeometry {
+    static func localRect(globalCG frame: CGRect, screenFrame: CGRect, primaryHeight: CGFloat) -> CGRect {
+        let originX = screenFrame.minX
+        let originY = primaryHeight - screenFrame.maxY
+        return CGRect(
+            x: frame.minX - originX,
+            y: frame.minY - originY,
+            width: frame.width,
+            height: frame.height
+        )
+    }
+}
+
 // MARK: - Window
 
 private final class OverlayWindow: NSWindow {
@@ -127,19 +145,9 @@ private final class OverlayView: NSView {
         self.onResult = onResult
         super.init(frame: .zero)
 
-        // SCWindow frames are in global CG coordinates (top-left origin at the
-        // primary display's top-left). Convert to this screen's local top-left
-        // coordinates, which match this flipped view.
         let primaryHeight = NSScreen.screens.first?.frame.maxY ?? screen.frame.maxY
-        let screenCGOrigin = CGPoint(x: screen.frame.minX, y: primaryHeight - screen.frame.maxY)
         pickableWindows = scWindows.map { w in
-            let local = CGRect(
-                x: w.frame.minX - screenCGOrigin.x,
-                y: w.frame.minY - screenCGOrigin.y,
-                width: w.frame.width,
-                height: w.frame.height
-            )
-            return (w, local)
+            (w, ScreenGeometry.localRect(globalCG: w.frame, screenFrame: screen.frame, primaryHeight: primaryHeight))
         }
     }
 

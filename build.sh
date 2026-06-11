@@ -8,12 +8,14 @@ if [ ! -f Packaging/AppIcon.icns ]; then
   swift Scripts/makeicon.swift
 fi
 
-swift build -c release
+# Build only the app product: the test executable uses @testable, which is
+# debug-only, so it must not be part of release builds.
+swift build -c release --product SuperDuperScreenshotApp
 
 APP="dist/Super Duper Screenshot.app"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
-cp .build/release/SuperDuperScreenshot "$APP/Contents/MacOS/"
+cp .build/release/SuperDuperScreenshotApp "$APP/Contents/MacOS/SuperDuperScreenshot"
 cp Packaging/Info.plist "$APP/Contents/"
 if [ -f Packaging/AppIcon.icns ]; then
   cp Packaging/AppIcon.icns "$APP/Contents/Resources/"

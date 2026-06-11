@@ -6,9 +6,10 @@ editor — arrows, callouts, step badges, blur, the works. Swift + SwiftUI, zero
 third-party dependencies, single ~2 MB binary.
 
 > **Made with Claude.** This project — the spec, every line of code, the app
-> icon, and these docs — was written by **Claude Fable 5**, Anthropic's Claude
-> Code model, working under human direction. Treat it accordingly: it has been
-> exercised by hand but has no automated test suite yet.
+> icon, the tests, and these docs — was written by **Claude Fable 5**,
+> Anthropic's Claude Code model, working under human direction. The logic core
+> is covered by ~60 unit tests run on every push (see [TESTING.md](TESTING.md));
+> the capture UI is verified against a manual checklist.
 
 ## Features
 
@@ -35,6 +36,7 @@ Requires macOS 14+ and the Xcode Command Line Tools (no full Xcode needed).
 ```bash
 ./build.sh                              # builds dist/Super Duper Screenshot.app
 open "dist/Super Duper Screenshot.app"
+swift run SuperDuperScreenshotTests     # run the unit tests
 ```
 
 Move the app to `/Applications` if you want **Launch at login** to work
@@ -64,8 +66,10 @@ copies the flattened image, Return applies a pending crop and Esc cancels it.
 ## Project layout
 
 ```
-Sources/            App, capture pipeline, settings, post-capture panel
+App/                @main entry point (thin executable)
+Sources/            Library: capture pipeline, settings, panel, editor
 Sources/Editor/     Annotation model, renderer, canvas, editor UI
+Tests/              Unit tests (see TESTING.md)
 Packaging/          Info.plist (icon is generated at build time)
 Scripts/            App-icon generator
 build.sh            Builds and packages dist/Super Duper Screenshot.app

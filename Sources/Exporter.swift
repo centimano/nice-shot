@@ -3,11 +3,24 @@ import UniformTypeIdentifiers
 
 @MainActor
 enum Exporter {
-    static func defaultFileName(counter: Int = 0) -> String {
+    static func defaultFileName(date: Date = Date(), counter: Int = 0) -> String {
         let fmt = DateFormatter()
+        fmt.locale = Locale(identifier: "en_US_POSIX")
         fmt.dateFormat = "yyyy-MM-dd 'at' HH.mm.ss"
-        let stamp = fmt.string(from: Date())
+        let stamp = fmt.string(from: date)
         return counter > 0 ? "Screenshot \(stamp) \(counter + 1).png" : "Screenshot \(stamp).png"
+    }
+
+    /// First path in `folder` based on the default name that doesn't collide
+    /// with an existing file ("… 2.png", "… 3.png", …).
+    static func uniqueDestination(in folder: URL, date: Date = Date()) -> URL {
+        var url = folder.appendingPathComponent(defaultFileName(date: date))
+        var counter = 1
+        while FileManager.default.fileExists(atPath: url.path) {
+            url = folder.appendingPathComponent(defaultFileName(date: date, counter: counter))
+            counter += 1
+        }
+        return url
     }
 
     /// PNG data with point-size metadata so HiDPI captures report the right DPI.
@@ -43,13 +56,7 @@ enum Exporter {
         let folder = AppSettings.shared.saveFolder
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
 
-        var url = folder.appendingPathComponent(defaultFileName())
-        var counter = 1
-        while FileManager.default.fileExists(atPath: url.path) {
-            url = folder.appendingPathComponent(defaultFileName(counter: counter))
-            counter += 1
-        }
-        return write(image: image, scale: scale, to: url)
+        return write(image: image, scale: scale, to: uniqueDestination(in: folder))
     }
 
     private static func write(image: CGImage, scale: CGFloat, to url: URL) -> Bool {
