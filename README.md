@@ -31,7 +31,14 @@ third-party dependencies, single ~2 MB binary.
 - **Output**: PNG with correct DPI metadata for HiDPI displays, or straight to
   the clipboard. All exports are flattened at full pixel resolution.
 
-## Install & build
+## Install
+
+**Easiest:** grab the zip from the [latest release](https://github.com/centimano/super-duper-screenshot/releases/latest),
+unzip, and drag the app to /Applications. The app isn't notarized, so on first
+launch use right-click → Open (or, on newer macOS, System Settings → Privacy &
+Security → **Open Anyway** after the first blocked attempt).
+
+## Build from source
 
 Requires macOS 14+ and the Xcode Command Line Tools (no full Xcode needed).
 
