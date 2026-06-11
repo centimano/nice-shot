@@ -61,6 +61,42 @@ struct GeometryTests {
         #expect(local == CGRect(x: 440, y: 120, width: 400, height: 300))
     }
 
+    // MARK: Magnifier loupe
+
+    @Test func loupeSourceRectCenteredOnCursor() {
+        let rect = LoupeGeometry.sourceRect(
+            around: CGPoint(x: 100, y: 100),
+            imageScale: 2,
+            imageSize: CGSize(width: 4000, height: 2000)
+        )
+        let side = LoupeGeometry.diameter / LoupeGeometry.zoom * 2
+        #expect(rect.width == side && rect.height == side)
+        #expect(abs(rect.midX - 200) < 0.001)
+        #expect(abs(rect.midY - 200) < 0.001)
+    }
+
+    @Test func loupeSourceRectClampsAtImageEdges() {
+        let size = CGSize(width: 4000, height: 2000)
+        let topLeft = LoupeGeometry.sourceRect(around: .zero, imageScale: 2, imageSize: size)
+        #expect(topLeft.origin == .zero)
+        let bottomRight = LoupeGeometry.sourceRect(
+            around: CGPoint(x: 2000, y: 1000), imageScale: 2, imageSize: size
+        )
+        #expect(bottomRight.maxX == 4000)
+        #expect(bottomRight.maxY == 2000)
+    }
+
+    @Test func loupePlacementFlipsAwayFromScreenEdges() {
+        let bounds = CGRect(x: 0, y: 0, width: 1000, height: 600)
+        let normal = LoupeGeometry.origin(cursor: CGPoint(x: 100, y: 100), in: bounds)
+        #expect(normal == CGPoint(x: 124, y: 124), "below-right of the cursor by default")
+
+        let nearCorner = LoupeGeometry.origin(cursor: CGPoint(x: 980, y: 580), in: bounds)
+        #expect(nearCorner.x + LoupeGeometry.diameter <= bounds.maxX - 8)
+        #expect(nearCorner.y + LoupeGeometry.diameter <= bounds.maxY - 8)
+        #expect(nearCorner.x < 980 && nearCorner.y < 580, "flipped to the cursor's upper-left")
+    }
+
     // MARK: Small clamping helpers
 
     @Test func clampedWithinRange() {

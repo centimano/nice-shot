@@ -29,6 +29,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         applyHotkeySettings()
     }
 
+    /// Opening the app while it's already running (e.g. double-clicking it in
+    /// Finder) shows Settings — otherwise a menu-bar-only app appears to do
+    /// nothing, which reads as "broken".
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows: Bool) -> Bool {
+        if !hasVisibleWindows {
+            SettingsWindowController.shared.show()
+        }
+        return true
+    }
+
     /// (Re)registers global hotkeys and rebuilds the status menu so its
     /// displayed key equivalents stay in sync with Settings.
     private func applyHotkeySettings() {

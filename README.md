@@ -15,9 +15,11 @@ third-party dependencies, single ~2 MB binary.
 
 ## Features
 
-- **Capture modes**: region drag-select (with live size badge), click-to-capture
-  window picking, full screen (per display), and 3/5/10-second timed capture
-  with an on-screen countdown.
+- **Capture modes**: region drag-select with a live size badge and a magnifier
+  loupe for pixel-perfect edges, click-to-capture window picking, full screen
+  (per display), and 3/5/10-second timed capture with an on-screen countdown.
+  Region captures snapshot the screen the moment the overlay opens, so the
+  result is instant and exact.
 - **Post-capture panel**: every capture pops a small floating panel — edit,
   save, copy, or discard. It never steals focus from what you're doing.
 - **Markup editor**: arrows, lines, rectangles, ellipses, freehand pen,

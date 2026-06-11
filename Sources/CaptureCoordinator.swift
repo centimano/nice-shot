@@ -10,13 +10,33 @@ final class CaptureCoordinator {
     private var countdown: CountdownHUD?
     private var editors: [EditorWindow] = []
 
+    /// Frozen per-display images taken when region selection starts. They feed
+    /// the magnifier loupe and become the capture itself (cropped), so the
+    /// result matches exactly what the user saw under the overlay.
+    private var regionSnapshots: [CGDirectDisplayID: CGImage] = [:]
+
     // MARK: - Entry points
 
     func captureRegion() {
         guard ensurePermission(), overlay == nil else { return }
-        let controller = SelectionOverlayController(mode: .region)
-        overlay = controller
-        controller.begin { [weak self] result in self?.handleOverlay(result) }
+        Task {
+            var snapshots: [CGDirectDisplayID: CGImage] = [:]
+            for screen in NSScreen.screens {
+                guard let id = screen.displayID else { continue }
+                if let image = try? await CaptureEngine.captureDisplay(
+                    screen: screen,
+                    cropTo: nil,
+                    showsCursor: AppSettings.shared.showCursor
+                ) {
+                    snapshots[id] = image
+                }
+            }
+            guard self.overlay == nil else { return }
+            self.regionSnapshots = snapshots
+            let controller = SelectionOverlayController(mode: .region, snapshots: snapshots)
+            self.overlay = controller
+            controller.begin { [weak self] result in self?.handleOverlay(result) }
+        }
     }
 
     func captureWindow() {
@@ -59,11 +79,20 @@ final class CaptureCoordinator {
 
     private func handleOverlay(_ result: SelectionOverlayController.Result) {
         overlay = nil
+        defer { regionSnapshots = [:] }
         switch result {
         case .cancelled:
             break
         case .region(let screen, let rect):
-            Task { await performDisplayCapture(screen: screen, rect: rect) }
+            let scale = screen.backingScaleFactor
+            if let id = screen.displayID,
+               let snapshot = regionSnapshots[id],
+               let cropped = snapshot.cropping(to: CaptureEngine.pixelRect(for: rect, scale: scale)) {
+                // Instant: crop the frozen snapshot the user was just looking at.
+                presentCapture(Capture(image: cropped, scale: scale, sourceScreen: screen))
+            } else {
+                Task { await performDisplayCapture(screen: screen, rect: rect) }
+            }
         case .window(let scWindow):
             Task {
                 do {

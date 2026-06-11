@@ -19,7 +19,7 @@ the spirit of the classic capture-annotate-share desktop tools.
 ## Capture modes & shortcuts
 | Mode | Default shortcut | Behavior |
 |---|---|---|
-| Region | ⌃⇧4 | Dimmed overlay, crosshair drag; live size badge; Esc cancels |
+| Region | ⌃⇧4 | Dimmed overlay, crosshair drag; live size badge; magnifier loupe with pixel coordinates; Esc cancels. The screen is snapshotted when the overlay opens, so the capture is instant and matches exactly what was on screen. |
 | Window | ⌃⇧5 | Hover highlights window under cursor; click captures it cleanly |
 | Full screen | ⌃⇧3 | Captures the display under the mouse (multi-monitor aware) |
 | Timed | menu | 3 / 5 / 10 s countdown HUD, then full-screen capture |
@@ -77,6 +77,6 @@ relaunch after granting.
 - Built with SwiftPM; `build.sh` generates the icon if needed, then assembles and ad-hoc signs `dist/Super Duper Screenshot.app`.
 
 ## Future ideas
-Capture history shelf, scrolling capture, magnifier loupe in the region
-selector, annotation styles/presets, multi-display region drag, sounds,
-sparse-color border themes, share-sheet integration.
+Capture history shelf, scrolling capture, annotation styles/presets,
+multi-display region drag, sounds, sparse-color border themes,
+share-sheet integration.

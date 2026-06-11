@@ -18,14 +18,16 @@ final class SelectionOverlayController {
 
     private let mode: Mode
     private let scWindows: [SCWindow]
+    private let snapshots: [CGDirectDisplayID: CGImage]
     private var overlays: [OverlayWindow] = []
     private var keyMonitor: Any?
     private var completion: ((Result) -> Void)?
     private var previousApp: NSRunningApplication?
 
-    init(mode: Mode, windows: [SCWindow] = []) {
+    init(mode: Mode, windows: [SCWindow] = [], snapshots: [CGDirectDisplayID: CGImage] = [:]) {
         self.mode = mode
         self.scWindows = windows
+        self.snapshots = snapshots
     }
 
     func begin(completion: @escaping (Result) -> Void) {
@@ -33,7 +35,8 @@ final class SelectionOverlayController {
         previousApp = NSWorkspace.shared.frontmostApplication
 
         for screen in NSScreen.screens {
-            let overlay = OverlayWindow(screen: screen, mode: mode, scWindows: scWindows) { [weak self] result in
+            let snapshot = screen.displayID.flatMap { snapshots[$0] }
+            let overlay = OverlayWindow(screen: screen, mode: mode, scWindows: scWindows, snapshot: snapshot) { [weak self] result in
                 self?.finish(result)
             }
             overlays.append(overlay)
@@ -94,6 +97,40 @@ enum ScreenGeometry {
     }
 }
 
+// MARK: - Magnifier loupe geometry (pure math, unit-tested)
+
+enum LoupeGeometry {
+    static let diameter: CGFloat = 110 // points on screen
+    static let zoom: CGFloat = 6 // magnification factor
+
+    /// Square region of the snapshot (in image pixels) the loupe magnifies,
+    /// clamped so it never reads outside the image.
+    static func sourceRect(around cursor: CGPoint, imageScale: CGFloat, imageSize: CGSize) -> CGRect {
+        let side = diameter / zoom * imageScale
+        var rect = CGRect(
+            x: cursor.x * imageScale - side / 2,
+            y: cursor.y * imageScale - side / 2,
+            width: side,
+            height: side
+        )
+        rect.origin.x = rect.origin.x.clamped(0, max(0, imageSize.width - side))
+        rect.origin.y = rect.origin.y.clamped(0, max(0, imageSize.height - side))
+        return rect
+    }
+
+    /// Loupe placement: offset from the cursor, flipping to the other side
+    /// near screen edges so it stays fully visible.
+    static func origin(cursor: CGPoint, in bounds: CGRect) -> CGPoint {
+        let gap: CGFloat = 24
+        let margin: CGFloat = 8
+        var x = cursor.x + gap
+        var y = cursor.y + gap
+        if x + diameter > bounds.maxX - margin { x = cursor.x - gap - diameter }
+        if y + diameter > bounds.maxY - margin { y = cursor.y - gap - diameter }
+        return CGPoint(x: max(bounds.minX + margin, x), y: max(bounds.minY + margin, y))
+    }
+}
+
 // MARK: - Window
 
 private final class OverlayWindow: NSWindow {
@@ -101,6 +138,7 @@ private final class OverlayWindow: NSWindow {
         screen: NSScreen,
         mode: SelectionOverlayController.Mode,
         scWindows: [SCWindow],
+        snapshot: CGImage?,
         onResult: @escaping (SelectionOverlayController.Result) -> Void
     ) {
         super.init(contentRect: screen.frame, styleMask: .borderless, backing: .buffered, defer: false)
@@ -111,7 +149,7 @@ private final class OverlayWindow: NSWindow {
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         ignoresMouseEvents = false
         acceptsMouseMovedEvents = true
-        contentView = OverlayView(screen: screen, mode: mode, scWindows: scWindows, onResult: onResult)
+        contentView = OverlayView(screen: screen, mode: mode, scWindows: scWindows, snapshot: snapshot, onResult: onResult)
     }
 
     override var canBecomeKey: Bool { true }
@@ -124,12 +162,17 @@ private final class OverlayView: NSView {
     private let mode: SelectionOverlayController.Mode
     private let onResult: (SelectionOverlayController.Result) -> Void
 
+    /// Frozen image of this screen, used by the magnifier loupe.
+    private let snapshot: CGImage?
+    private let snapshotScale: CGFloat
+
     /// Windows under the picker, front-to-back, with frames converted to this
     /// view's flipped local coordinates.
     private var pickableWindows: [(window: SCWindow, localFrame: CGRect)] = []
 
     private var dragStart: CGPoint?
     private var dragCurrent: CGPoint?
+    private var lastMouse: CGPoint?
     private var hovered: (window: SCWindow, localFrame: CGRect)?
 
     override var isFlipped: Bool { true }
@@ -138,10 +181,13 @@ private final class OverlayView: NSView {
         screen: NSScreen,
         mode: SelectionOverlayController.Mode,
         scWindows: [SCWindow],
+        snapshot: CGImage?,
         onResult: @escaping (SelectionOverlayController.Result) -> Void
     ) {
         self.screen = screen
         self.mode = mode
+        self.snapshot = snapshot
+        self.snapshotScale = screen.backingScaleFactor
         self.onResult = onResult
         super.init(frame: .zero)
 
@@ -166,26 +212,37 @@ private final class OverlayView: NSView {
 
     // MARK: Mouse
 
-    override func mouseMoved(with event: NSEvent) {
-        guard mode == .window else { return }
-        let p = convert(event.locationInWindow, from: nil)
-        let hit = pickableWindows.first { $0.localFrame.contains(p) }
-        if hit?.window.windowID != hovered?.window.windowID {
-            hovered = hit
-            needsDisplay = true
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        if let window {
+            lastMouse = convert(window.mouseLocationOutsideOfEventStream, from: nil)
         }
+    }
+
+    override func mouseMoved(with event: NSEvent) {
+        let p = convert(event.locationInWindow, from: nil)
+        lastMouse = p
+        if mode == .window {
+            let hit = pickableWindows.first { $0.localFrame.contains(p) }
+            if hit?.window.windowID != hovered?.window.windowID {
+                hovered = hit
+            }
+        }
+        needsDisplay = true
     }
 
     override func mouseDown(with event: NSEvent) {
         guard mode == .region else { return }
         dragStart = convert(event.locationInWindow, from: nil)
         dragCurrent = dragStart
+        lastMouse = dragStart
         needsDisplay = true
     }
 
     override func mouseDragged(with event: NSEvent) {
         guard mode == .region, dragStart != nil else { return }
         dragCurrent = convert(event.locationInWindow, from: nil)
+        lastMouse = dragCurrent
         needsDisplay = true
     }
 
@@ -254,6 +311,59 @@ private final class OverlayView: NSView {
                 : "Click a window to capture it — Esc to cancel"
             drawBadge(hint, at: CGPoint(x: bounds.midX, y: bounds.minY + 60))
         }
+
+        if mode == .region, let cursor = lastMouse, bounds.contains(cursor) {
+            drawLoupe(at: cursor)
+        }
+    }
+
+    /// Magnified, pixel-crisp view of the frozen snapshot around the cursor,
+    /// with a crosshair and the cursor's pixel coordinates.
+    private func drawLoupe(at cursor: CGPoint) {
+        guard let snapshot else { return }
+        let imageSize = CGSize(width: snapshot.width, height: snapshot.height)
+        let source = LoupeGeometry.sourceRect(around: cursor, imageScale: snapshotScale, imageSize: imageSize)
+        guard source.width > 0, let cropped = snapshot.cropping(to: source) else { return }
+
+        let rect = CGRect(
+            origin: LoupeGeometry.origin(cursor: cursor, in: bounds),
+            size: CGSize(width: LoupeGeometry.diameter, height: LoupeGeometry.diameter)
+        )
+        let circle = NSBezierPath(ovalIn: rect)
+
+        NSGraphicsContext.current?.saveGraphicsState()
+        circle.addClip()
+        NSImage(cgImage: cropped, size: rect.size).draw(
+            in: rect,
+            from: .zero,
+            operation: .sourceOver,
+            fraction: 1,
+            respectFlipped: true,
+            hints: [.interpolation: NSImageInterpolation.none.rawValue as NSNumber]
+        )
+
+        // Crosshair through the magnified cursor pixel (off-center only when
+        // the source rect was clamped at a screen edge).
+        let cx = rect.minX + (cursor.x * snapshotScale - source.minX) / source.width * rect.width
+        let cy = rect.minY + (cursor.y * snapshotScale - source.minY) / source.height * rect.height
+        NSColor.white.withAlphaComponent(0.85).setStroke()
+        let cross = NSBezierPath()
+        cross.move(to: CGPoint(x: cx, y: rect.minY))
+        cross.line(to: CGPoint(x: cx, y: rect.maxY))
+        cross.move(to: CGPoint(x: rect.minX, y: cy))
+        cross.line(to: CGPoint(x: rect.maxX, y: cy))
+        cross.lineWidth = 1
+        cross.stroke()
+        NSGraphicsContext.current?.restoreGraphicsState()
+
+        NSColor.white.setStroke()
+        circle.lineWidth = 2
+        circle.stroke()
+
+        drawBadge(
+            "\(Int(cursor.x * snapshotScale)), \(Int(cursor.y * snapshotScale)) px",
+            at: CGPoint(x: rect.midX, y: min(rect.maxY + 18, bounds.maxY - 14))
+        )
     }
 
     private func drawBadge(_ text: String, at center: CGPoint) {

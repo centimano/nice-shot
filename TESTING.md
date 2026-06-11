@@ -27,6 +27,7 @@ before tagging a release. Each line should take a few seconds.
 
 ### Capture
 1. ⌃⇧4 → drag a region → size badge updates while dragging; capture matches the selected area.
+1b. ⌃⇧4 → move the mouse without clicking → magnifier loupe follows with a zoomed view, crosshair, and pixel coordinates; it flips sides near screen edges.
 2. ⌃⇧4 → press Esc → overlay disappears, nothing captured, focus returns to the previous app.
 3. ⌃⇧5 → hovering highlights windows with the app name; clicking captures only that window.
 4. ⌃⇧3 → captures the display under the mouse (verify per-display on multi-monitor).
