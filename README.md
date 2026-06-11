@@ -8,8 +8,8 @@ third-party dependencies, single ~2 MB binary.
 > **Made with Claude.** This project — the spec, every line of code, the app
 > icon, the tests, and these docs — was written by **Claude Fable 5**,
 > Anthropic's Claude Code model, working under human direction. The logic core
-> is covered by ~60 unit tests run on every push (see [TESTING.md](TESTING.md));
-> the capture UI is verified against a manual checklist.
+> and renderer are covered by 72 unit tests run on every push (see
+> [TESTING.md](TESTING.md)); the capture UI is verified against a manual checklist.
 
 ## Features
 

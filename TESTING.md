@@ -6,16 +6,19 @@
 swift run SuperDuperScreenshotTests
 ```
 
-~60 unit tests cover the logic core: annotation geometry (bounds, hit-testing,
+72 unit tests cover the logic core — annotation geometry (bounds, hit-testing,
 move, resize handles), editor undo/redo, crop math, the text-editing lifecycle,
-hotkey encoding/display, screen-coordinate conversion, filename uniquing, and
-PNG DPI metadata. They run automatically on every push via GitHub Actions
+hotkey encoding/display, screen-coordinate conversion, filename uniquing, PNG
+DPI metadata — plus rendering smoke tests that draw every annotation type
+through the real export pipeline and verify pixels changed where they should
+(blur obscures only its region, redaction is opaque black, effects alter edges,
+and so on). They run automatically on every push via GitHub Actions
 (`.github/workflows/tests.yml`).
 
 Note: the tests are a small executable rather than a `swift test` bundle
 because the Xcode Command Line Tools' test helper silently runs nothing;
-see the comment in `Tests/TestMain.swift`. The two flattened-export tests
-skip themselves on CI because rendering needs a GUI session.
+see the comment in `Tests/TestMain.swift`. The rendering/export tests skip
+themselves on CI because `ImageRenderer` needs a GUI session.
 
 ## Manual checklist (before a release)
 
