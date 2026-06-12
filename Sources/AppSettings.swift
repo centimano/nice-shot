@@ -77,7 +77,7 @@ struct Hotkey: Codable, Equatable {
 @MainActor
 final class AppSettings: ObservableObject {
     static let shared = AppSettings()
-    static let hotkeysChanged = Notification.Name("SuperDuperScreenshot.hotkeysChanged")
+    static let hotkeysChanged = Notification.Name("NiceShot.hotkeysChanged")
 
     @Published var regionHotkey: Hotkey {
         didSet { store(regionHotkey, key: "regionHotkey"); notifyHotkeysChanged() }

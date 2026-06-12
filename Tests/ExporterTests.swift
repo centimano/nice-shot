@@ -1,6 +1,6 @@
 import Testing
 import AppKit
-@testable import SuperDuperScreenshot
+@testable import NiceShot
 
 @MainActor
 struct ExporterTests {

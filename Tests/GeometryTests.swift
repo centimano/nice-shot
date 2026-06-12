@@ -1,6 +1,6 @@
 import Testing
 import Foundation
-@testable import SuperDuperScreenshot
+@testable import NiceShot
 
 struct GeometryTests {
     // MARK: CGRect(points:) — drag rectangles must normalize in any direction

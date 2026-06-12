@@ -13,4 +13,4 @@ jobs:
       - name: Build app
         run: swift build
       - name: Run tests
-        run: swift run SuperDuperScreenshotTests
+        run: swift run NiceShotTests

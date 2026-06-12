@@ -3,7 +3,7 @@
 ## Automated tests
 
 ```bash
-swift run SuperDuperScreenshotTests
+swift run NiceShotTests
 ```
 
 72 unit tests cover the logic core — annotation geometry (bounds, hit-testing,

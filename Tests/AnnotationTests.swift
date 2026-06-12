@@ -1,6 +1,6 @@
 import Testing
 import SwiftUI
-@testable import SuperDuperScreenshot
+@testable import NiceShot
 
 struct AnnotationTests {
     // MARK: Bounds

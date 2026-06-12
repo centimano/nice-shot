@@ -2,30 +2,30 @@
 import PackageDescription
 
 let package = Package(
-    name: "SuperDuperScreenshot",
+    name: "NiceShot",
     platforms: [.macOS(.v14)],
     targets: [
         // All app code lives in this library so the test target can link it.
         .target(
-            name: "SuperDuperScreenshot",
+            name: "NiceShot",
             path: "Sources",
             swiftSettings: [.swiftLanguageMode(.v5)]
         ),
         // Thin executable: just the @main entry point.
         .executableTarget(
-            name: "SuperDuperScreenshotApp",
-            dependencies: ["SuperDuperScreenshot"],
+            name: "NiceShotApp",
+            dependencies: ["NiceShot"],
             path: "App",
             swiftSettings: [.swiftLanguageMode(.v5)]
         ),
-        // Tests are an executable (`swift run SuperDuperScreenshotTests`), not
+        // Tests are an executable (`swift run NiceShotTests`), not
         // a .testTarget: the Command Line Tools' test helper silently runs
         // nothing, so Tests/TestMain.swift invokes Swift Testing directly.
         // The extra search paths locate Testing.framework when only the
         // Command Line Tools are installed; harmless with full Xcode.
         .executableTarget(
-            name: "SuperDuperScreenshotTests",
-            dependencies: ["SuperDuperScreenshot"],
+            name: "NiceShotTests",
+            dependencies: ["NiceShot"],
             path: "Tests",
             swiftSettings: [
                 .swiftLanguageMode(.v5),

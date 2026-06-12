@@ -1,4 +1,4 @@
-# Super Duper Screenshot — PRD (v1)
+# Nice Shot — PRD (v1)
 
 A lightweight, modern, still-image screen capture and markup app for macOS, in
 the spirit of the classic capture-annotate-share desktop tools.
@@ -74,7 +74,7 @@ relaunch after granting.
 - macOS 14+. Capture via `SCScreenshotManager` (ScreenCaptureKit); region/full-screen capture the display then crop; window capture uses `SCContentFilter(desktopIndependentWindow:)`.
 - Global hotkeys via Carbon `RegisterEventHotKey` (no Accessibility permission needed); persisted in `UserDefaults`.
 - Annotations stored in image-pixel coordinates; one SwiftUI `Canvas` renderer drives both on-screen display and `ImageRenderer` export, so WYSIWYG is exact.
-- Built with SwiftPM; `build.sh` generates the icon if needed, then assembles and ad-hoc signs `dist/Super Duper Screenshot.app`.
+- Built with SwiftPM; `build.sh` generates the icon if needed, then assembles and ad-hoc signs `dist/Nice Shot.app`.
 
 ## Future ideas
 Capture history shelf, scrolling capture, annotation styles/presets,

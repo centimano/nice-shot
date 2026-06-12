@@ -13,7 +13,7 @@ final class EditorWindow: NSObject, NSWindowDelegate {
         let doc = EditorDocument(capture: capture)
         let hosting = NSHostingController(rootView: EditorView(doc: doc))
         window = NSWindow(contentViewController: hosting)
-        window.title = "Super Duper Screenshot"
+        window.title = "Nice Shot"
         window.styleMask = [.titled, .closable, .miniaturizable, .resizable]
 
         let toolbarHeight: CGFloat = 44

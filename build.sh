@@ -1,5 +1,5 @@
 #!/bin/bash
-# Build and package Super Duper Screenshot.app into dist/.
+# Build and package Nice Shot.app into dist/.
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -10,12 +10,12 @@ fi
 
 # Build only the app product: the test executable uses @testable, which is
 # debug-only, so it must not be part of release builds.
-swift build -c release --product SuperDuperScreenshotApp
+swift build -c release --product NiceShotApp
 
-APP="dist/Super Duper Screenshot.app"
+APP="dist/Nice Shot.app"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
-cp .build/release/SuperDuperScreenshotApp "$APP/Contents/MacOS/SuperDuperScreenshot"
+cp .build/release/NiceShotApp "$APP/Contents/MacOS/NiceShot"
 cp Packaging/Info.plist "$APP/Contents/"
 if [ -f Packaging/AppIcon.icns ]; then
   cp Packaging/AppIcon.icns "$APP/Contents/Resources/"

@@ -1,6 +1,6 @@
 import Testing
 import SwiftUI
-@testable import SuperDuperScreenshot
+@testable import NiceShot
 
 private let runningOnCI = ProcessInfo.processInfo.environment["CI"] != nil
 

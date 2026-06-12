@@ -1,6 +1,6 @@
 import Testing
 
-/// The tests build as a small executable (`swift run SuperDuperScreenshotTests`)
+/// The tests build as a small executable (`swift run NiceShotTests`)
 /// rather than a SwiftPM test bundle, because the Command Line Tools'
 /// `swiftpm-testing-helper` fails to execute discovered tests (it exits 0
 /// without running anything). Calling Swift Testing's entry point directly

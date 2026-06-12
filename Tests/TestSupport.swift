@@ -1,6 +1,6 @@
 import AppKit
 import SwiftUI
-@testable import SuperDuperScreenshot
+@testable import NiceShot
 
 /// A solid-color in-memory image standing in for a real screen capture.
 func makeTestImage(width: Int = 200, height: Int = 100) -> CGImage {

@@ -161,7 +161,7 @@ final class CaptureCoordinator {
         let alert = NSAlert()
         alert.messageText = "Screen Recording Permission Needed"
         alert.informativeText = """
-        Super Duper Screenshot needs Screen Recording access to capture your screen.
+        Nice Shot needs Screen Recording access to capture your screen.
 
         Enable it in System Settings → Privacy & Security → Screen & System Audio Recording, then relaunch the app.
         """

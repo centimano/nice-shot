@@ -12,7 +12,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         item.button?.image = NSImage(
             systemSymbolName: "camera.viewfinder",
-            accessibilityDescription: "Super Duper Screenshot"
+            accessibilityDescription: "Nice Shot"
         )
         statusItem = item
 
@@ -99,7 +99,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(settingsItem)
 
         let about = NSMenuItem(
-            title: "About Super Duper Screenshot",
+            title: "About Nice Shot",
             action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)),
             keyEquivalent: ""
         )
@@ -108,7 +108,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         menu.addItem(.separator())
         let quit = NSMenuItem(
-            title: "Quit Super Duper Screenshot",
+            title: "Quit Nice Shot",
             action: #selector(NSApplication.terminate(_:)),
             keyEquivalent: "q"
         )
@@ -130,7 +130,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         appMenu.addItem(settingsItem)
         appMenu.addItem(.separator())
         appMenu.addItem(
-            withTitle: "Quit Super Duper Screenshot",
+            withTitle: "Quit Nice Shot",
             action: #selector(NSApplication.terminate(_:)),
             keyEquivalent: "q"
         )

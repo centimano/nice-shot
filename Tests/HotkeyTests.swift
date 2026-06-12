@@ -1,7 +1,7 @@
 import Testing
 import AppKit
 import Carbon.HIToolbox
-@testable import SuperDuperScreenshot
+@testable import NiceShot
 
 @MainActor
 struct HotkeyTests {

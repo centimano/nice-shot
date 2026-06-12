@@ -1,6 +1,6 @@
-# Super Duper Screenshot
+# Nice Shot
 
-[![Tests](https://github.com/centimano/super-duper-screenshot/actions/workflows/tests.yml/badge.svg)](https://github.com/centimano/super-duper-screenshot/actions/workflows/tests.yml)
+[![Tests](https://github.com/centimano/nice-shot/actions/workflows/tests.yml/badge.svg)](https://github.com/centimano/nice-shot/actions/workflows/tests.yml)
 
 A lightweight, native screenshot capture and markup tool for macOS. It lives in
 your menu bar, captures stills via ScreenCaptureKit, and opens a fast annotation
@@ -35,7 +35,7 @@ third-party dependencies, single ~2 MB binary.
 
 ## Install
 
-**Easiest:** grab the zip from the [latest release](https://github.com/centimano/super-duper-screenshot/releases/latest),
+**Easiest:** grab the zip from the [latest release](https://github.com/centimano/nice-shot/releases/latest),
 unzip, and drag the app to /Applications. The app isn't notarized, so on first
 launch use right-click → Open (or, on newer macOS, System Settings → Privacy &
 Security → **Open Anyway** after the first blocked attempt).
@@ -45,9 +45,9 @@ Security → **Open Anyway** after the first blocked attempt).
 Requires macOS 14+ and the Xcode Command Line Tools (no full Xcode needed).
 
 ```bash
-./build.sh                              # builds dist/Super Duper Screenshot.app
-open "dist/Super Duper Screenshot.app"
-swift run SuperDuperScreenshotTests     # run the unit tests
+./build.sh                              # builds dist/Nice Shot.app
+open "dist/Nice Shot.app"
+swift run NiceShotTests     # run the unit tests
 ```
 
 Move the app to `/Applications` if you want **Launch at login** to work
@@ -83,7 +83,7 @@ Sources/Editor/     Annotation model, renderer, canvas, editor UI
 Tests/              Unit tests (see TESTING.md)
 Packaging/          Info.plist (icon is generated at build time)
 Scripts/            App-icon generator
-build.sh            Builds and packages dist/Super Duper Screenshot.app
+build.sh            Builds and packages dist/Nice Shot.app
 ```
 
 Annotations are stored in image-pixel coordinates, and one renderer draws both
