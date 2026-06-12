@@ -29,6 +29,31 @@ struct ExporterTests {
         #expect(abs(rep.size.height - 50) < 0.5)
     }
 
+    @Test func defaultFileNameHonorsExtension() {
+        #expect(Exporter.defaultFileName(date: fixedDate, fileExtension: "jpg")
+            == "Screenshot 2026-06-11 at 09.05.07.jpg")
+    }
+
+    @Test func jpegDataFlattensAlphaAndSetsDPI() throws {
+        let image = makeTestImage(width: 200, height: 100)
+        let data = try #require(Exporter.jpegData(from: image, scale: 2, quality: 0.85))
+        let rep = try #require(NSBitmapImageRep(data: data))
+        #expect(rep.pixelsWide == 200)
+        #expect(rep.pixelsHigh == 100)
+        #expect(!rep.hasAlpha)
+        #expect(abs(rep.size.width - 100) < 0.5)
+        #expect(abs(rep.size.height - 50) < 0.5)
+        // JPEG magic bytes, so the file is what its extension claims.
+        #expect(data.prefix(2) == Data([0xFF, 0xD8]))
+    }
+
+    @Test func imageFormatFromURL() {
+        #expect(ImageFormat.from(url: URL(fileURLWithPath: "/tmp/a.png")) == .png)
+        #expect(ImageFormat.from(url: URL(fileURLWithPath: "/tmp/a.jpg")) == .jpeg)
+        #expect(ImageFormat.from(url: URL(fileURLWithPath: "/tmp/a.JPEG")) == .jpeg)
+        #expect(ImageFormat.from(url: URL(fileURLWithPath: "/tmp/noext")) == .png)
+    }
+
     @Test func uniqueDestinationAvoidsOverwriting() throws {
         let folder = FileManager.default.temporaryDirectory
             .appendingPathComponent("sds-tests-\(UUID().uuidString)", isDirectory: true)

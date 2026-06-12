@@ -55,5 +55,7 @@ before tagging a release. Each line should take a few seconds.
 16. Record a custom shortcut → menu bar shows it; old combo stops working, new one works.
 17. While recording, pressing an existing capture shortcut does *not* trigger a capture.
 18. Quick-save mode writes uniquely-named files to the chosen folder.
+18b. Format set to JPEG → saves write .jpg files that open in Preview; quality slider appears; PNG remains the default.
+18c. "After each capture" set to Copy / Save / Open the editor → capture skips the panel and does that action; back on "Show the capture panel" the panel returns.
 19. Launch at login toggles without error when the app is in /Applications.
 20. Settings window opens showing every section and can be resized.

@@ -132,6 +132,21 @@ final class CaptureCoordinator {
         if autoCopied {
             Exporter.copyToClipboard(image: capture.image, scale: capture.scale)
         }
+        switch AppSettings.shared.postCaptureAction {
+        case .panel:
+            showPanel(for: capture, autoCopied: autoCopied)
+        case .copy:
+            if !autoCopied {
+                Exporter.copyToClipboard(image: capture.image, scale: capture.scale)
+            }
+        case .save:
+            Exporter.save(image: capture.image, scale: capture.scale)
+        case .edit:
+            openEditor(for: capture)
+        }
+    }
+
+    private func showPanel(for capture: Capture, autoCopied: Bool) {
         let panel = PostCapturePanel(capture: capture, stackIndex: panels.count, autoCopied: autoCopied)
         panel.onEdit = { [weak self, weak panel] in
             self?.openEditor(for: capture)

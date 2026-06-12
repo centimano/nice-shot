@@ -10,7 +10,7 @@ third-party dependencies, single ~2 MB binary.
 > **Made with Claude.** This project — the spec, every line of code, the app
 > icon, the tests, and these docs — was written by **Claude Fable 5**,
 > Anthropic's Claude Code model, working under human direction. The logic core
-> and renderer are covered by 78 unit tests run on every push (see
+> and renderer are covered by 81 unit tests run on every push (see
 > [TESTING.md](TESTING.md)); the capture UI is verified against a manual checklist.
 
 ## Features
@@ -30,11 +30,13 @@ third-party dependencies, single ~2 MB binary.
   drop shadow / rounded-corner effects on export.
 - **Settings** (⌘, or via the menu bar icon): record your own capture
   shortcuts, launch at login, show/hide the cursor in captures, toggle the
-  shutter sound, auto-copy every capture to the clipboard, and either get
-  asked where to save or quick-save into a folder of your choice.
-- **Output**: PNG with correct DPI metadata for HiDPI displays, straight to
-  the clipboard, or the macOS share sheet (AirDrop, Messages, Mail, …). All
-  exports are flattened at full pixel resolution.
+  shutter sound, auto-copy every capture to the clipboard, pick what happens
+  after each capture (panel, copy, save, or straight into the editor), and
+  either get asked where to save or quick-save into a folder of your choice.
+- **Output**: PNG (default) or JPEG with a quality slider, correct DPI
+  metadata for HiDPI displays, straight to the clipboard, or the macOS share
+  sheet (AirDrop, Messages, Mail, …). All exports are flattened at full pixel
+  resolution.
 
 ## Install
 

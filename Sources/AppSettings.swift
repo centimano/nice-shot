@@ -73,6 +73,25 @@ struct Hotkey: Codable, Equatable {
     ]
 }
 
+/// What happens to a fresh capture (OVR-002 in the original spec).
+enum PostCaptureAction: String, CaseIterable, Identifiable {
+    case panel
+    case copy
+    case save
+    case edit
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .panel: "Show the capture panel"
+        case .copy: "Copy to the clipboard"
+        case .save: "Save"
+        case .edit: "Open the editor"
+        }
+    }
+}
+
 /// UserDefaults-backed app settings shared across the app.
 @MainActor
 final class AppSettings: ObservableObject {
@@ -97,11 +116,20 @@ final class AppSettings: ObservableObject {
     @Published var autoCopy: Bool {
         didSet { defaults.set(autoCopy, forKey: "autoCopy") }
     }
+    @Published var postCaptureAction: PostCaptureAction {
+        didSet { defaults.set(postCaptureAction.rawValue, forKey: "postCaptureAction") }
+    }
     @Published var askWhereToSave: Bool {
         didSet { defaults.set(askWhereToSave, forKey: "askWhereToSave") }
     }
     @Published var saveFolderPath: String {
         didSet { defaults.set(saveFolderPath, forKey: "saveFolderPath") }
+    }
+    @Published var saveFormat: ImageFormat {
+        didSet { defaults.set(saveFormat.rawValue, forKey: "saveFormat") }
+    }
+    @Published var jpegQuality: Double {
+        didSet { defaults.set(jpegQuality, forKey: "jpegQuality") }
     }
     /// Mirrors SMAppService state; mutate via `setLaunchAtLogin`.
     @Published private(set) var launchAtLogin: Bool
@@ -119,8 +147,11 @@ final class AppSettings: ObservableObject {
         showCursor = defaults.bool(forKey: "showCursor")
         playCaptureSound = defaults.object(forKey: "playCaptureSound") as? Bool ?? true
         autoCopy = defaults.bool(forKey: "autoCopy")
+        postCaptureAction = PostCaptureAction(rawValue: defaults.string(forKey: "postCaptureAction") ?? "") ?? .panel
         askWhereToSave = defaults.object(forKey: "askWhereToSave") as? Bool ?? true
         saveFolderPath = defaults.string(forKey: "saveFolderPath") ?? "~/Desktop"
+        saveFormat = ImageFormat(rawValue: defaults.string(forKey: "saveFormat") ?? "") ?? .png
+        jpegQuality = defaults.object(forKey: "jpegQuality") as? Double ?? 0.85
         launchAtLogin = SMAppService.mainApp.status == .enabled
     }
 

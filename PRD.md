@@ -41,9 +41,11 @@ auto-copy enabled, the panel shows a green "Copied" badge.
 - **Shortcuts** — per-mode hotkey recorders with reset-to-default.
 - **Capture** — show mouse cursor in captures; play the system shutter sound
   (on by default); automatically copy every new capture to the clipboard
-  (off by default).
+  (off by default); "after each capture" action — show the panel (default),
+  copy silently, save, or open the editor directly.
 - **Saving** — "ask where to save each time" (default) or quick-save into a
-  chosen folder (default `~/Desktop`, auto-uniqued filenames).
+  chosen folder (default `~/Desktop`, auto-uniqued filenames); format PNG
+  (default) or JPEG with a quality slider.
 - **General** — launch at login (`SMAppService`; works best from /Applications).
 
 ## Editor
@@ -69,9 +71,11 @@ auto-copy enabled, the panel shows a green "Copied" badge.
 Border (color + width), drop shadow, rounded corners.
 
 ### Export
-Save as PNG (correct DPI metadata on HiDPI captures), copy to clipboard, or
+Save as PNG (default) or JPEG (correct DPI metadata on HiDPI captures; JPEG is
+composited onto white since it has no transparency), copy to clipboard, or
 hand off via the system share sheet. Annotations are flattened at full pixel
-resolution.
+resolution. On macOS 15+ the save dialog shows a format pop-up; the chosen
+extension always wins over the preference.
 
 ## Permissions
 Screen Recording (TCC). On first use the app preflights access, triggers the
@@ -85,6 +89,6 @@ relaunch after granting.
 - Built with SwiftPM; `build.sh` generates the icon if needed, then assembles and ad-hoc signs `dist/Nice Shot.app`.
 
 ## Future ideas
-Capture history shelf, scrolling capture, annotation styles/presets,
-multi-display region drag, sparse-color border themes.
-(Shipped from this list in v1.3: capture sound, share-sheet integration.)
+Tracked in [BACKLOG.md](BACKLOG.md) — a prioritized backlog merged from this
+list and the original "Super Duper Screenshot" Product Spec v0.2.
+(Shipped from the original list in v1.3: capture sound, share-sheet integration.)

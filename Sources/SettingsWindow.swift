@@ -74,6 +74,11 @@ struct SettingsView: View {
                 Toggle("Show mouse cursor in captures", isOn: $settings.showCursor)
                 Toggle("Play shutter sound", isOn: $settings.playCaptureSound)
                 Toggle("Copy new captures to the clipboard", isOn: $settings.autoCopy)
+                Picker("After each capture", selection: $settings.postCaptureAction) {
+                    ForEach(PostCaptureAction.allCases) { action in
+                        Text(action.displayName).tag(action)
+                    }
+                }
             }
 
             Section("Saving") {
@@ -87,6 +92,22 @@ struct SettingsView: View {
                             .lineLimit(1)
                             .truncationMode(.middle)
                         Button("Choose…") { chooseFolder() }
+                    }
+                }
+                Picker("Format", selection: $settings.saveFormat) {
+                    ForEach(ImageFormat.allCases) { format in
+                        Text(format.displayName).tag(format)
+                    }
+                }
+                .pickerStyle(.segmented)
+                if settings.saveFormat == .jpeg {
+                    HStack {
+                        Text("JPEG quality")
+                        Slider(value: $settings.jpegQuality, in: 0.3...1.0)
+                        Text("\(Int(settings.jpegQuality * 100))%")
+                            .foregroundStyle(.secondary)
+                            .monospacedDigit()
+                            .frame(width: 44, alignment: .trailing)
                     }
                 }
             }
