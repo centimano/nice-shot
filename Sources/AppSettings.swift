@@ -91,6 +91,12 @@ final class AppSettings: ObservableObject {
     @Published var showCursor: Bool {
         didSet { defaults.set(showCursor, forKey: "showCursor") }
     }
+    @Published var playCaptureSound: Bool {
+        didSet { defaults.set(playCaptureSound, forKey: "playCaptureSound") }
+    }
+    @Published var autoCopy: Bool {
+        didSet { defaults.set(autoCopy, forKey: "autoCopy") }
+    }
     @Published var askWhereToSave: Bool {
         didSet { defaults.set(askWhereToSave, forKey: "askWhereToSave") }
     }
@@ -111,6 +117,8 @@ final class AppSettings: ObservableObject {
         windowHotkey = Self.load("windowHotkey") ?? .defaultWindow
         fullScreenHotkey = Self.load("fullScreenHotkey") ?? .defaultFullScreen
         showCursor = defaults.bool(forKey: "showCursor")
+        playCaptureSound = defaults.object(forKey: "playCaptureSound") as? Bool ?? true
+        autoCopy = defaults.bool(forKey: "autoCopy")
         askWhereToSave = defaults.object(forKey: "askWhereToSave") as? Bool ?? true
         saveFolderPath = defaults.string(forKey: "saveFolderPath") ?? "~/Desktop"
         launchAtLogin = SMAppService.mainApp.status == .enabled

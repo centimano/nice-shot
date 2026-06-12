@@ -10,7 +10,7 @@ third-party dependencies, single ~2 MB binary.
 > **Made with Claude.** This project — the spec, every line of code, the app
 > icon, the tests, and these docs — was written by **Claude Fable 5**,
 > Anthropic's Claude Code model, working under human direction. The logic core
-> and renderer are covered by 72 unit tests run on every push (see
+> and renderer are covered by 78 unit tests run on every push (see
 > [TESTING.md](TESTING.md)); the capture UI is verified against a manual checklist.
 
 ## Features
@@ -21,17 +21,20 @@ third-party dependencies, single ~2 MB binary.
   Region captures snapshot the screen the moment the overlay opens, so the
   result is instant and exact.
 - **Post-capture panel**: every capture pops a small floating panel — edit,
-  save, copy, or discard. It never steals focus from what you're doing.
+  save, copy, share, or discard. It never steals focus from what you're doing.
 - **Markup editor**: arrows, lines, rectangles, ellipses, freehand pen,
   highlighter, text, speech-bubble callouts, auto-numbered step badges,
-  pixelate-blur, and redact. Select, move, and resize via drag handles;
-  double-click to re-edit text. Full undo/redo. Crop, plus border / drop
-  shadow / rounded-corner effects on export.
+  pixelate-blur, and redact. An Office-style tool ribbon shows each tool's
+  name (collapsible to compact icons). Select, move, and resize via drag
+  handles; double-click to re-edit text. Full undo/redo. Crop, plus border /
+  drop shadow / rounded-corner effects on export.
 - **Settings** (⌘, or via the menu bar icon): record your own capture
-  shortcuts, launch at login, show/hide the cursor in captures, and either get
+  shortcuts, launch at login, show/hide the cursor in captures, toggle the
+  shutter sound, auto-copy every capture to the clipboard, and either get
   asked where to save or quick-save into a folder of your choice.
-- **Output**: PNG with correct DPI metadata for HiDPI displays, or straight to
-  the clipboard. All exports are flattened at full pixel resolution.
+- **Output**: PNG with correct DPI metadata for HiDPI displays, straight to
+  the clipboard, or the macOS share sheet (AirDrop, Messages, Mail, …). All
+  exports are flattened at full pixel resolution.
 
 ## Install
 

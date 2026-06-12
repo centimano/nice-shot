@@ -13,13 +13,32 @@ enum Tool: String, CaseIterable, Identifiable {
         case .line: return "line.diagonal"
         case .box: return "rectangle"
         case .ellipse: return "circle"
-        case .pen: return "scribble"
+        case .pen: return "pencil.line"
         case .highlighter: return "highlighter"
         case .text: return "textformat"
         case .callout: return "text.bubble"
-        case .step: return "1.circle"
-        case .blur: return "aqi.medium"
-        case .redact: return "rectangle.fill"
+        case .step: return "number.circle"
+        case .blur: return "squareshape.split.3x3"
+        case .redact: return "eye.slash"
+        }
+    }
+
+    /// Short caption shown under the icon in the tool ribbon.
+    var label: String {
+        switch self {
+        case .select: return "Select"
+        case .crop: return "Crop"
+        case .arrow: return "Arrow"
+        case .line: return "Line"
+        case .box: return "Box"
+        case .ellipse: return "Ellipse"
+        case .pen: return "Pen"
+        case .highlighter: return "Marker"
+        case .text: return "Text"
+        case .callout: return "Callout"
+        case .step: return "Step"
+        case .blur: return "Blur"
+        case .redact: return "Redact"
         }
     }
 

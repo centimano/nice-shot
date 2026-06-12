@@ -6,7 +6,7 @@
 swift run NiceShotTests
 ```
 
-72 unit tests cover the logic core — annotation geometry (bounds, hit-testing,
+78 unit tests cover the logic core — annotation geometry (bounds, hit-testing,
 move, resize handles), editor undo/redo, crop math, the text-editing lifecycle,
 hotkey encoding/display, screen-coordinate conversion, filename uniquing, PNG
 DPI metadata — plus rendering smoke tests that draw every annotation type
@@ -38,9 +38,13 @@ before tagging a release. Each line should take a few seconds.
 7. Save → cancel the dialog → panel stays; Save → confirm → file lands with correct name.
 8. Copy → paste into Preview (⌘N) shows the capture.
 9. Two captures in a row → panels stack without covering each other.
+9b. Share button opens the share sheet; sharing to Mail/Messages attaches the PNG.
+9c. With "Copy new captures to the clipboard" on → a green "Copied" badge shows and pasting works without pressing Copy.
+9d. Shutter sound plays on capture; disabling the setting silences it.
 
 ### Editor
 10. Every tool draws; arrows/shapes can be selected, moved, and resized by handles.
+10b. Tool ribbon shows icon + name per tool; the chevron collapses it to compact icons and the choice survives reopening the editor.
 11. Double-click a text/callout → edit; empty text annotation disappears; empty callout stays.
 12. ⌘Z/⇧⌘Z walk history correctly across draw, move, crop, and delete.
 13. Crop → Return applies, Esc cancels; annotations stay glued to image content.
@@ -52,3 +56,4 @@ before tagging a release. Each line should take a few seconds.
 17. While recording, pressing an existing capture shortcut does *not* trigger a capture.
 18. Quick-save mode writes uniquely-named files to the chosen folder.
 19. Launch at login toggles without error when the app is in /Applications.
+20. Settings window opens showing every section and can be resized.

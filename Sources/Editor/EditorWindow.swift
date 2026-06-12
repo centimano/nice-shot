@@ -16,7 +16,8 @@ final class EditorWindow: NSObject, NSWindowDelegate {
         window.title = "Nice Shot"
         window.styleMask = [.titled, .closable, .miniaturizable, .resizable]
 
-        let toolbarHeight: CGFloat = 44
+        let ribbonOn = UserDefaults.standard.object(forKey: "editorRibbon") as? Bool ?? true
+        let toolbarHeight: CGFloat = ribbonOn ? 100 : 44
         let visible = (capture.sourceScreen ?? NSScreen.main)?.visibleFrame
             ?? CGRect(x: 0, y: 0, width: 1440, height: 900)
         let target = CGSize(

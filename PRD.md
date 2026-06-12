@@ -31,19 +31,26 @@ overlay interaction, focus returns to the app the user was in.
 
 ## Post-capture panel
 Floating, non-activating panel in the bottom-right of the capture's screen:
-thumbnail + **Edit…** (prominent) / **Save** / **Copy** / ✕. Multiple captures
-stack upward. Save honors the saving preference (below); a cancelled save
-dialog keeps the capture. Copy puts PNG + TIFF on the clipboard.
+thumbnail + **Edit…** (prominent) / **Save** / **Copy** / **Share** / ✕.
+Multiple captures stack upward. Save honors the saving preference (below); a
+cancelled save dialog keeps the capture. Copy puts PNG + TIFF on the clipboard.
+Share opens the system share sheet (AirDrop, Messages, Mail, …). With
+auto-copy enabled, the panel shows a green "Copied" badge.
 
 ## Settings (⌘,)
 - **Shortcuts** — per-mode hotkey recorders with reset-to-default.
-- **Capture** — show mouse cursor in captures.
+- **Capture** — show mouse cursor in captures; play the system shutter sound
+  (on by default); automatically copy every new capture to the clipboard
+  (off by default).
 - **Saving** — "ask where to save each time" (default) or quick-save into a
   chosen folder (default `~/Desktop`, auto-uniqued filenames).
 - **General** — launch at login (`SMAppService`; works best from /Applications).
 
 ## Editor
-- Toolbar: tool buttons, color picker, line weight, font size, undo/redo (⌘Z/⇧⌘Z), delete, Effects menu, Copy (⇧⌘C), Save (⌘S).
+- Tool ribbon (Office-style, on by default): large buttons with icon + tool
+  name. A chevron at the toolbar's right end collapses it to a compact
+  icon-only row; the choice persists.
+- Toolbar: color picker, line weight, font size, undo/redo (⌘Z/⇧⌘Z), delete, Effects menu, Share, Copy (⇧⌘C), Save (⌘S).
 - Canvas shows the image fit-to-window at up to natural (point) size.
 
 ### Tools
@@ -62,8 +69,9 @@ dialog keeps the capture. Copy puts PNG + TIFF on the clipboard.
 Border (color + width), drop shadow, rounded corners.
 
 ### Export
-Save as PNG (correct DPI metadata on HiDPI captures) or copy to clipboard.
-Annotations are flattened at full pixel resolution.
+Save as PNG (correct DPI metadata on HiDPI captures), copy to clipboard, or
+hand off via the system share sheet. Annotations are flattened at full pixel
+resolution.
 
 ## Permissions
 Screen Recording (TCC). On first use the app preflights access, triggers the
@@ -78,5 +86,5 @@ relaunch after granting.
 
 ## Future ideas
 Capture history shelf, scrolling capture, annotation styles/presets,
-multi-display region drag, sounds, sparse-color border themes,
-share-sheet integration.
+multi-display region drag, sparse-color border themes.
+(Shipped from this list in v1.3: capture sound, share-sheet integration.)

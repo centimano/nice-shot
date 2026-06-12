@@ -32,10 +32,16 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
             let hosting = NSHostingController(rootView: SettingsView())
             let w = NSWindow(contentViewController: hosting)
             w.title = "Nice Shot Settings"
-            w.styleMask = [.titled, .closable]
+            w.styleMask = [.titled, .closable, .resizable]
             w.isReleasedWhenClosed = false
             w.delegate = self
+            // Tall enough to show every section without scrolling, capped to
+            // the screen. Afterwards the frame autosaves, so a user resize is
+            // restored the next time Settings opens.
+            let height = min(700, (NSScreen.main?.visibleFrame.height ?? 800) - 80)
+            w.setContentSize(NSSize(width: 480, height: height))
             w.center()
+            w.setFrameAutosaveName("NiceShotSettings")
             window = w
             ActivationPolicy.retain()
         }
@@ -66,6 +72,8 @@ struct SettingsView: View {
 
             Section("Capture") {
                 Toggle("Show mouse cursor in captures", isOn: $settings.showCursor)
+                Toggle("Play shutter sound", isOn: $settings.playCaptureSound)
+                Toggle("Copy new captures to the clipboard", isOn: $settings.autoCopy)
             }
 
             Section("Saving") {
@@ -93,8 +101,7 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 460)
-        .frame(minHeight: 420)
+        .frame(minWidth: 440, maxWidth: .infinity, minHeight: 420, maxHeight: .infinity)
     }
 
     private var launchAtLoginBinding: Binding<Bool> {

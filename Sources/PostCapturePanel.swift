@@ -11,13 +11,16 @@ final class PostCapturePanel {
     private let capture: Capture
     private var panel: NSPanel!
 
-    init(capture: Capture, stackIndex: Int = 0) {
+    init(capture: Capture, stackIndex: Int = 0, autoCopied: Bool = false) {
         self.capture = capture
 
         let view = PostCaptureView(
             thumbnail: NSImage(cgImage: capture.image, size: capture.pointSize),
             sizeLabel: "\(capture.image.width) × \(capture.image.height) px",
             saveLabel: AppSettings.shared.askWhereToSave ? "Save…" : "Save",
+            autoCopied: autoCopied,
+            shareImage: { capture.image },
+            shareScale: capture.scale,
             onEdit: { [weak self] in self?.onEdit?() },
             onSave: { [weak self] in self?.save() },
             onCopy: { [weak self] in self?.copy() },
@@ -76,6 +79,9 @@ private struct PostCaptureView: View {
     let thumbnail: NSImage
     let sizeLabel: String
     let saveLabel: String
+    let autoCopied: Bool
+    let shareImage: () -> CGImage?
+    let shareScale: CGFloat
     let onEdit: () -> Void
     let onSave: () -> Void
     let onCopy: () -> Void
@@ -105,9 +111,16 @@ private struct PostCaptureView: View {
                 .help("Discard")
             }
 
-            Text(sizeLabel)
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            HStack(spacing: 6) {
+                Text(sizeLabel)
+                if autoCopied {
+                    Label("Copied", systemImage: "checkmark.circle.fill")
+                        .foregroundStyle(.green)
+                        .help("Copied to the clipboard automatically")
+                }
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
 
             HStack(spacing: 8) {
                 Button(action: onEdit) {
@@ -120,6 +133,9 @@ private struct PostCaptureView: View {
                     .controlSize(.large)
 
                 Button("Copy", action: onCopy)
+                    .controlSize(.large)
+
+                ShareButton(image: shareImage, scale: shareScale, labeled: false)
                     .controlSize(.large)
             }
         }

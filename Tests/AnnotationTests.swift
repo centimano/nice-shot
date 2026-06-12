@@ -1,3 +1,4 @@
+import AppKit
 import Testing
 import SwiftUI
 @testable import NiceShot
@@ -163,5 +164,28 @@ struct AnnotationTests {
         #expect(Annotation.test(.text(textOrigin)).textEditingOrigin == textOrigin)
         let bubble = CGRect(x: 5, y: 6, width: 10, height: 10)
         #expect(Annotation.test(.callout(bubble, tail: .zero)).textEditingOrigin == bubble.origin)
+    }
+
+    // MARK: Tool metadata (ribbon)
+
+    @Test func everyToolHasLabelAndHelp() {
+        for tool in Tool.allCases {
+            #expect(!tool.label.isEmpty)
+            #expect(!tool.help.isEmpty)
+        }
+    }
+
+    @Test func toolLabelsAreUnique() {
+        let labels = Tool.allCases.map(\.label)
+        #expect(Set(labels).count == labels.count)
+    }
+
+    @Test func everyToolSymbolResolves() {
+        for tool in Tool.allCases {
+            #expect(
+                NSImage(systemSymbolName: tool.symbol, accessibilityDescription: nil) != nil,
+                "missing SF Symbol \(tool.symbol)"
+            )
+        }
     }
 }

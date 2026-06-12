@@ -44,14 +44,58 @@ struct EditorView: View {
 
 struct EditorToolbar: View {
     @ObservedObject var doc: EditorDocument
+    /// Office-style ribbon: big tool buttons with names. Off = compact icons.
+    @AppStorage("editorRibbon") private var showRibbon = true
 
     private let strokeWidths: [CGFloat] = [2, 4, 6, 10]
     private let fontSizes: [CGFloat] = [14, 18, 22, 28, 36, 48]
 
     var body: some View {
+        VStack(spacing: 0) {
+            if showRibbon {
+                ribbonRow
+                Divider()
+            }
+            controlRow
+        }
+        .background(.bar)
+    }
+
+    private var ribbonRow: some View {
+        HStack(spacing: 2) {
+            ForEach(Tool.allCases) { tool in
+                Button {
+                    doc.tool = tool
+                } label: {
+                    VStack(spacing: 3) {
+                        Image(systemName: tool.symbol)
+                            .font(.system(size: 16, weight: .medium))
+                            .frame(height: 18)
+                        Text(tool.label)
+                            .font(.system(size: 10))
+                    }
+                    .frame(width: 48, height: 44)
+                }
+                .buttonStyle(.borderless)
+                .background(
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(doc.tool == tool ? Color.accentColor.opacity(0.18) : .clear)
+                )
+                .foregroundStyle(doc.tool == tool ? Color.accentColor : Color.primary)
+                .help(tool.help)
+            }
+            Spacer()
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+    }
+
+    private var controlRow: some View {
         HStack(spacing: 10) {
-            toolButtons
-            Divider().frame(height: 22)
+            if !showRibbon {
+                toolButtons
+                Divider().frame(height: 22)
+            }
             styleControls
             Divider().frame(height: 22)
             historyControls
@@ -68,6 +112,9 @@ struct EditorToolbar: View {
             Spacer()
 
             effectsMenu
+
+            ShareButton(image: { doc.renderFinal() }, scale: doc.scale)
+
             Button {
                 doc.copyFlattened()
             } label: {
@@ -84,10 +131,17 @@ struct EditorToolbar: View {
             .buttonStyle(.borderedProminent)
             .keyboardShortcut("s", modifiers: .command)
             .help("Save as PNG (⌘S)")
+
+            Button {
+                showRibbon.toggle()
+            } label: {
+                Image(systemName: showRibbon ? "chevron.up" : "chevron.down")
+            }
+            .buttonStyle(.borderless)
+            .help(showRibbon ? "Hide Tool Ribbon" : "Show Tool Ribbon")
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
-        .background(.bar)
     }
 
     private var toolButtons: some View {

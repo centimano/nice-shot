@@ -127,7 +127,12 @@ final class CaptureCoordinator {
     }
 
     private func presentCapture(_ capture: Capture) {
-        let panel = PostCapturePanel(capture: capture, stackIndex: panels.count)
+        CaptureSound.play()
+        let autoCopied = AppSettings.shared.autoCopy
+        if autoCopied {
+            Exporter.copyToClipboard(image: capture.image, scale: capture.scale)
+        }
+        let panel = PostCapturePanel(capture: capture, stackIndex: panels.count, autoCopied: autoCopied)
         panel.onEdit = { [weak self, weak panel] in
             self?.openEditor(for: capture)
             if let panel { self?.removePanel(panel) }

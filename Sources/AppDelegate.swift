@@ -100,10 +100,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         let about = NSMenuItem(
             title: "About Nice Shot",
-            action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)),
+            action: #selector(showAbout),
             keyEquivalent: ""
         )
-        about.target = NSApp
+        about.target = self
         menu.addItem(about)
 
         menu.addItem(.separator())
@@ -165,4 +165,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func captureFullScreen() { coordinator.captureFullScreen() }
     @objc private func timedCapture(_ sender: NSMenuItem) { coordinator.timedCapture(seconds: sender.tag) }
     @objc private func openSettings() { SettingsWindowController.shared.show() }
+
+    /// A menu-bar accessory app isn't active when its menu is used, so the
+    /// standard About panel would open behind the frontmost app. Activate
+    /// first so it comes to the foreground.
+    @objc private func showAbout() {
+        NSApp.activate(ignoringOtherApps: true)
+        NSApp.orderFrontStandardAboutPanel(nil)
+    }
 }
