@@ -57,6 +57,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             keyCode: settings.fullScreenHotkey.keyCode,
             modifiers: settings.fullScreenHotkey.carbonModifiers
         ) { [weak self] in self?.coordinator.captureFullScreen() }
+        manager.register(
+            keyCode: settings.screenDrawHotkey.keyCode,
+            modifiers: settings.screenDrawHotkey.carbonModifiers
+        ) { [weak self] in self?.coordinator.drawOnScreen() }
 
         statusItem?.menu = buildStatusMenu()
     }
@@ -80,6 +84,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         add("Capture Region", #selector(captureRegion), hotkey: settings.regionHotkey)
         add("Capture Window", #selector(captureWindow), hotkey: settings.windowHotkey)
         add("Capture Full Screen", #selector(captureFullScreen), hotkey: settings.fullScreenHotkey)
+        add("Draw on Screen", #selector(drawOnScreen), hotkey: settings.screenDrawHotkey)
 
         let timed = NSMenuItem(title: "Timed Capture", action: nil, keyEquivalent: "")
         let timedMenu = NSMenu()
@@ -163,6 +168,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func captureRegion() { coordinator.captureRegion() }
     @objc private func captureWindow() { coordinator.captureWindow() }
     @objc private func captureFullScreen() { coordinator.captureFullScreen() }
+    @objc private func drawOnScreen() { coordinator.drawOnScreen() }
     @objc private func timedCapture(_ sender: NSMenuItem) { coordinator.timedCapture(seconds: sender.tag) }
     @objc private func openSettings() { SettingsWindowController.shared.show() }
 

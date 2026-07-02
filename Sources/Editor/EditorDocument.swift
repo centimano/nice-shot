@@ -134,6 +134,16 @@ final class EditorDocument: ObservableObject {
         annotations.reversed().first { $0.hitTest(point, unit: unit) }
     }
 
+    /// Remove every annotation as a single undoable step.
+    func clearAnnotations() {
+        endTextEditing()
+        guard !annotations.isEmpty else { return }
+        let pre = snapshot()
+        annotations.removeAll()
+        selectedID = nil
+        commit(pre)
+    }
+
     // MARK: - Text editing
 
     /// Pass `pre` when the annotation was just created so its creation and the

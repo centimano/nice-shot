@@ -9,6 +9,7 @@ final class CaptureCoordinator {
     private var panels: [PostCapturePanel] = []
     private var countdown: CountdownHUD?
     private var editors: [EditorWindow] = []
+    private var screenDraw: ScreenDrawController?
 
     /// Frozen per-display images taken when region selection starts. They feed
     /// the magnifier loupe and become the capture itself (cropped), so the
@@ -65,6 +66,35 @@ final class CaptureCoordinator {
         guard ensurePermission() else { return }
         let screen = Self.screenUnderMouse()
         Task { await performDisplayCapture(screen: screen, rect: nil) }
+    }
+
+    /// ZoomIt-style screen draw: freeze the display under the mouse and
+    /// annotate directly on it. The cursor is never baked into the frozen
+    /// image — it would sit wherever the hotkey was pressed, under drawings.
+    func drawOnScreen() {
+        guard ensurePermission(), screenDraw == nil, overlay == nil else { return }
+        let screen = Self.screenUnderMouse()
+        Task {
+            do {
+                let image = try await CaptureEngine.captureDisplay(
+                    screen: screen,
+                    cropTo: nil,
+                    showsCursor: false
+                )
+                guard self.screenDraw == nil else { return }
+                let capture = Capture(image: image, scale: screen.backingScaleFactor, sourceScreen: screen)
+                let controller = ScreenDrawController(capture: capture)
+                self.screenDraw = controller
+                controller.begin(on: screen) { [weak self] result in
+                    self?.screenDraw = nil
+                    if case .openEditor(let capture, let document) = result {
+                        self?.openEditor(for: capture, document: document)
+                    }
+                }
+            } catch {
+                self.showError(error)
+            }
+        }
     }
 
     func timedCapture(seconds: Int) {
@@ -164,8 +194,8 @@ final class CaptureCoordinator {
         panels.removeAll { $0 === panel }
     }
 
-    private func openEditor(for capture: Capture) {
-        let editor = EditorWindow(capture: capture) { [weak self] closed in
+    private func openEditor(for capture: Capture, document: EditorDocument? = nil) {
+        let editor = EditorWindow(capture: capture, document: document) { [weak self] closed in
             self?.editors.removeAll { $0 === closed }
         }
         editors.append(editor)

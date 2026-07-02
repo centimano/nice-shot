@@ -7,10 +7,12 @@ final class EditorWindow: NSObject, NSWindowDelegate {
     private let window: NSWindow
     private let onClose: (EditorWindow) -> Void
 
-    init(capture: Capture, onClose: @escaping (EditorWindow) -> Void) {
+    /// Pass `document` to adopt annotations made elsewhere (screen draw mode);
+    /// otherwise a fresh document is created from the capture.
+    init(capture: Capture, document: EditorDocument? = nil, onClose: @escaping (EditorWindow) -> Void) {
         self.onClose = onClose
 
-        let doc = EditorDocument(capture: capture)
+        let doc = document ?? EditorDocument(capture: capture)
         let hosting = NSHostingController(rootView: EditorView(doc: doc))
         window = NSWindow(contentViewController: hosting)
         window.title = "Nice Shot"

@@ -9,6 +9,12 @@ struct HotkeyTests {
         #expect(Hotkey.defaultRegion.display == "⌃⇧4")
         #expect(Hotkey.defaultWindow.display == "⌃⇧5")
         #expect(Hotkey.defaultFullScreen.display == "⌃⇧3")
+        #expect(Hotkey.defaultScreenDraw.display == "⌃⇧D")
+    }
+
+    @Test func defaultShortcutsAreDistinct() {
+        let defaults: [Hotkey] = [.defaultRegion, .defaultWindow, .defaultFullScreen, .defaultScreenDraw]
+        #expect(Set(defaults.map(\.display)).count == defaults.count)
     }
 
     @Test func displayUsesStandardModifierOrder() {

@@ -10,7 +10,7 @@ third-party dependencies, single ~2 MB binary.
 > **Made with Claude.** This project — the spec, every line of code, the app
 > icon, the tests, and these docs — was written by **Claude Fable 5**,
 > Anthropic's Claude Code model, working under human direction. The logic core
-> and renderer are covered by 81 unit tests run on every push (see
+> and renderer are covered by 94 unit tests run on every push (see
 > [TESTING.md](TESTING.md)); the capture UI is verified against a manual checklist.
 
 ## Features
@@ -20,6 +20,10 @@ third-party dependencies, single ~2 MB binary.
   (per display), and 3/5/10-second timed capture with an on-screen countdown.
   Region captures snapshot the screen the moment the overlay opens, so the
   result is instant and exact.
+- **Screen draw** (⌃⇧D): ZoomIt-style presentation mode — freeze the screen
+  and draw directly on it with the editor's tools, then ⌘C to copy, ⌘S to
+  save, ⌘E to keep refining in the full editor, or Esc to walk away. Single
+  letters switch tools (P pen, A arrow, B box, …) just like ZoomIt.
 - **Post-capture panel**: every capture pops a small floating panel — edit,
   save, copy, share, or discard. It never steals focus from what you're doing.
 - **Markup editor**: arrows, lines, rectangles, ellipses, freehand pen,
@@ -50,10 +54,15 @@ Security → **Open Anyway** after the first blocked attempt).
 Requires macOS 14+ and the Xcode Command Line Tools (no full Xcode needed).
 
 ```bash
-./build.sh                              # builds dist/Nice Shot.app
-open "dist/Nice Shot.app"
+./build.sh                  # builds dist/Nice Shot.app
+./build.sh --beta           # builds dist/Nice Shot Beta.app (separate bundle
+                            # id — installs and gets permissions alongside the
+                            # release app, for testing unreleased builds)
 swift run NiceShotTests     # run the unit tests
 ```
+
+Don't run the release and beta apps at the same time — whichever launches
+second can't register the global hotkeys.
 
 Move the app to `/Applications` if you want **Launch at login** to work
 reliably. The bundle is ad-hoc signed, so Gatekeeper on another Mac will warn
@@ -72,6 +81,7 @@ relaunch the app — a one-time macOS requirement.
 | Capture region (drag, Esc cancels) | ⌃⇧4 |
 | Capture window (hover + click) | ⌃⇧5 |
 | Capture full screen (display under mouse) | ⌃⇧3 |
+| Draw on screen (freeze + annotate) | ⌃⇧D |
 | Timed capture (3/5/10 s) | menu bar |
 
 All shortcuts are configurable in Settings.

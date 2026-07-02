@@ -68,6 +68,24 @@ struct EditorDocumentTests {
         #expect(doc.annotations.count == 1)
     }
 
+    @Test func clearAnnotationsIsOneUndoStep() {
+        let doc = makeDoc()
+        doc.add(sampleBox)
+        doc.add(.test(.step(CGPoint(x: 20, y: 20)), number: 1))
+        doc.selectedID = doc.annotations[0].id
+        doc.clearAnnotations()
+        #expect(doc.annotations.isEmpty)
+        #expect(doc.selectedID == nil)
+        doc.undo()
+        #expect(doc.annotations.count == 2, "clearing everything should undo in one step")
+    }
+
+    @Test func clearOnEmptyDocumentIsNoOp() {
+        let doc = makeDoc()
+        doc.clearAnnotations()
+        #expect(!doc.canUndo)
+    }
+
     @Test func deleteWithoutSelectionIsNoOp() {
         let doc = makeDoc()
         doc.add(sampleBox)

@@ -6,10 +6,10 @@
 swift run NiceShotTests
 ```
 
-78 unit tests cover the logic core — annotation geometry (bounds, hit-testing,
+94 unit tests cover the logic core — annotation geometry (bounds, hit-testing,
 move, resize handles), editor undo/redo, crop math, the text-editing lifecycle,
-hotkey encoding/display, screen-coordinate conversion, filename uniquing, PNG
-DPI metadata — plus rendering smoke tests that draw every annotation type
+hotkey encoding/display, screen draw mode's key handling, screen-coordinate
+conversion, filename uniquing, PNG DPI metadata — plus rendering smoke tests that draw every annotation type
 through the real export pipeline and verify pixels changed where they should
 (blur obscures only its region, redaction is opaque black, effects alter edges,
 and so on). They run automatically on every push via GitHub Actions
@@ -32,6 +32,19 @@ before tagging a release. Each line should take a few seconds.
 3. ⌃⇧5 → hovering highlights windows with the app name; clicking captures only that window.
 4. ⌃⇧3 → captures the display under the mouse (verify per-display on multi-monitor).
 5. Menu bar → Timed Capture → 3 Seconds → countdown shows, HUD is *not* in the final image.
+
+### Screen draw (v2)
+SD1. ⌃⇧D → screen freezes in place with a floating tool strip at the top and a shortcut hint at the bottom; the pen is pre-selected and drawing works immediately.
+SD2. Every strip tool works (select/pen/marker/arrow/line/box/ellipse/text); single letters switch tools (P pen, A arrow, B box, E ellipse, L line, T text, H marker, V select).
+SD3. Color swatches change the drawing color (ring marks the active swatch); line-weight menu changes stroke width.
+SD4. T → click → type text; while typing, letters do NOT switch tools; Esc ends typing (first press) and only a second Esc closes the mode.
+SD5. ⌘Z / ⇧⌘Z undo/redo; trash button clears all drawings and one ⌘Z brings them all back; ⌫ deletes the selected annotation.
+SD6. ⌘C → mode closes, shutter sound plays, pasting into Preview shows the screen with drawings baked in.
+SD7. ⌘S → mode hides, save dialog appears; cancel brings the mode back with drawings intact; confirming saves and closes.
+SD8. ⌘E → full editor opens with the frozen screen and all drawings editable (move/resize them).
+SD9. Esc → closes without saving; focus returns to the previous app; no stray windows remain.
+SD10. Multi-monitor: mode opens on the display under the mouse.
+SD11. Menu bar → "Draw on Screen" starts the mode; Settings → "Draw on Screen" hotkey can be rebound and the new combo works.
 
 ### Post-capture panel
 6. Panel appears bottom-right without stealing keyboard focus.

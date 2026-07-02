@@ -10,6 +10,7 @@ struct Hotkey: Codable, Equatable {
     static let defaultRegion = Hotkey(keyCode: UInt32(kVK_ANSI_4), carbonModifiers: UInt32(controlKey | shiftKey))
     static let defaultWindow = Hotkey(keyCode: UInt32(kVK_ANSI_5), carbonModifiers: UInt32(controlKey | shiftKey))
     static let defaultFullScreen = Hotkey(keyCode: UInt32(kVK_ANSI_3), carbonModifiers: UInt32(controlKey | shiftKey))
+    static let defaultScreenDraw = Hotkey(keyCode: UInt32(kVK_ANSI_D), carbonModifiers: UInt32(controlKey | shiftKey))
 
     init(keyCode: UInt32, carbonModifiers: UInt32) {
         self.keyCode = keyCode
@@ -107,6 +108,9 @@ final class AppSettings: ObservableObject {
     @Published var fullScreenHotkey: Hotkey {
         didSet { store(fullScreenHotkey, key: "fullScreenHotkey"); notifyHotkeysChanged() }
     }
+    @Published var screenDrawHotkey: Hotkey {
+        didSet { store(screenDrawHotkey, key: "screenDrawHotkey"); notifyHotkeysChanged() }
+    }
     @Published var showCursor: Bool {
         didSet { defaults.set(showCursor, forKey: "showCursor") }
     }
@@ -144,6 +148,7 @@ final class AppSettings: ObservableObject {
         regionHotkey = Self.load("regionHotkey") ?? .defaultRegion
         windowHotkey = Self.load("windowHotkey") ?? .defaultWindow
         fullScreenHotkey = Self.load("fullScreenHotkey") ?? .defaultFullScreen
+        screenDrawHotkey = Self.load("screenDrawHotkey") ?? .defaultScreenDraw
         showCursor = defaults.bool(forKey: "showCursor")
         playCaptureSound = defaults.object(forKey: "playCaptureSound") as? Bool ?? true
         autoCopy = defaults.bool(forKey: "autoCopy")
