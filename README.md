@@ -10,8 +10,11 @@ third-party dependencies, single ~2 MB binary.
 > **Made with Claude.** This project — the spec, every line of code, the app
 > icon, the tests, and these docs — was written by **Claude Fable 5**,
 > Anthropic's Claude Code model, working under human direction. The logic core
-> and renderer are covered by 94 unit tests run on every push (see
+> and renderer are covered by 110 unit tests run on every push (see
 > [TESTING.md](TESTING.md)); the capture UI is verified against a manual checklist.
+>
+> With v2 — screen draw, frozen zoom, and board modes — the original vision is
+> complete. *Claude takes a bow.* 🎩
 
 ## Features
 
@@ -23,7 +26,13 @@ third-party dependencies, single ~2 MB binary.
 - **Screen draw** (⌃⇧D): ZoomIt-style presentation mode — freeze the screen
   and draw directly on it with the editor's tools, then ⌘C to copy, ⌘S to
   save, ⌘E to keep refining in the full editor, or Esc to walk away. Single
-  letters switch tools (P pen, A arrow, B box, …) just like ZoomIt.
+  letters switch tools (P pen, A arrow, B box, …) just like ZoomIt. W and K
+  swap the frozen screen for a whiteboard or blackboard when you'd rather
+  sketch on a clean surface.
+- **Frozen zoom** (⌃⇧Z): freeze the screen and magnify up to 8× — scroll or
+  arrow keys zoom toward the cursor, moving the mouse pans, and ⌘C/⌘S/⌘E
+  export exactly what's on screen. Press any drawing key to annotate the
+  magnified view; double-click or Esc exits.
 - **Post-capture panel**: every capture pops a small floating panel — edit,
   save, copy, share, or discard. It never steals focus from what you're doing.
 - **Markup editor**: arrows, lines, rectangles, ellipses, freehand pen,
@@ -82,6 +91,7 @@ relaunch the app — a one-time macOS requirement.
 | Capture window (hover + click) | ⌃⇧5 |
 | Capture full screen (display under mouse) | ⌃⇧3 |
 | Draw on screen (freeze + annotate) | ⌃⇧D |
+| Zoom into screen (freeze + magnify) | ⌃⇧Z |
 | Timed capture (3/5/10 s) | menu bar |
 
 All shortcuts are configurable in Settings.

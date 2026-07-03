@@ -20,7 +20,7 @@ Packaging/Info.plist each time so About shows which beta is running.
 - ✅ Screen Draw mode (ZoomIt "Draw", Ctrl+2 there) — flagship
 - ✅ Frozen Zoom mode (ZoomIt "Zoom", Ctrl+1 there), combinable with Draw
 - ✅ Whiteboard / blackboard variants of Draw
-- ✅ Break timer (ZoomIt Ctrl+3)
+- ❌ Break timer (ZoomIt Ctrl+3) — dropped 2026-07-02, Jeff's call: unnecessary
 - ⚠️ LiveZoom — stretch only; macOS has no click-through magnification API
   for third parties. Built-in Accessibility Zoom (⌃+scroll) already covers it.
   Revisit only if frozen zoom feels insufficient in practice.
@@ -49,7 +49,7 @@ palette, single-letter tool shortcuts (P/A/L/B/E/T/H/V), bottom hint bar,
 save-cancel restores the session instead of losing drawings. Manual checklist
 items SD1–SD11 added to TESTING.md — Jeff verifies before release.
 
-## Phase 2 — Frozen Zoom mode + board modes ✅ DONE (2026-07-02; awaiting Jeff's manual check ZM1–ZM11 + SD12)
+## Phase 2 — Frozen Zoom mode + board modes ✅ DONE (2026-07-02; Jeff verified ZM1–ZM11 + SD12 on beta 8)
 
 Shipped as designed: `Sources/ScreenZoom.swift` holds pure `ZoomMath`
 (fraction-mapped pan means the point under the cursor stays fixed while
@@ -66,16 +66,13 @@ blackboard toggles in draw mode via undoable `EditorDocument.replaceBaseImage`
 clamping, viewport-crop geometry, zoom keys, board keys, base-image undo.
 Manual checklist ZM1–ZM11 and SD12 added to TESTING.md.
 
-## Phase 3 — Break timer, polish, release v2.0.0 (one session)
+## Phase 3 — Release v2.0.0
 
-- Break timer: menu-bar item + optional hotkey; fullscreen countdown
-  (reuse/extend `CountdownHUD`), configurable minutes, Esc cancels,
-  optional sound at zero
-- Settings: new "Screen modes" section (hotkeys, default pen color/width,
-  timer minutes)
-- README + TESTING.md checklist updates for the three new modes
-- Version bump in Packaging/Info.plist, `./build.sh`, Jeff runs the manual
-  checklist, then tag + `gh release create` v2.0.0
+v2 feature work is complete (2026-07-02): break timer dropped as unnecessary,
+manual checklists verified on beta 8, README updated for the new modes.
+Remaining, whenever Jeff wants to publish: bump both version keys in
+Packaging/Info.plist → `./build.sh` (plain, release bundle id) → tag +
+`gh release create` v2.0.0.
 
 ## Phase 4 (optional, decide after living with v2 for a while)
 
