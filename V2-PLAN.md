@@ -66,13 +66,11 @@ blackboard toggles in draw mode via undoable `EditorDocument.replaceBaseImage`
 clamping, viewport-crop geometry, zoom keys, board keys, base-image undo.
 Manual checklist ZM1–ZM11 and SD12 added to TESTING.md.
 
-## Phase 3 — Release v2.0.0
+## Phase 3 — Release v2.0.0 ✅ DONE (2026-07-02)
 
-v2 feature work is complete (2026-07-02): break timer dropped as unnecessary,
-manual checklists verified on beta 8, README updated for the new modes.
-Remaining, whenever Jeff wants to publish: bump both version keys in
-Packaging/Info.plist → `./build.sh` (plain, release bundle id) → tag +
-`gh release create` v2.0.0.
+Break timer dropped as unnecessary (Jeff's call); manual checklists verified
+on beta 8; README updated for the new modes. Released as v2.0.0 (build 9):
+https://github.com/centimano/nice-shot/releases/tag/v2.0.0 — v2 is complete.
 
 ## Phase 4 (optional, decide after living with v2 for a while)
 
