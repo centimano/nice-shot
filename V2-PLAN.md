@@ -9,6 +9,12 @@ this file ("continue V2-PLAN.md, phase N"). Jeff does manual verification
 (computer-use can't see ad-hoc-signed apps); Claude verifies via unit tests
 and inspecting saved PNGs/clipboard.
 
+**Build discipline:** until v2.0.0 ships, every build handed to Jeff is
+`./build.sh --beta` → `dist/Nice Shot Beta.app` (own bundle id, own Screen
+Recording grant — plain `./build.sh` fights the installed v1.4.0 and is
+reserved for the phase-3 release step). Bump CFBundleVersion in
+Packaging/Info.plist each time so About shows which beta is running.
+
 ## Scope decisions (made 2026-07-02)
 
 - ✅ Screen Draw mode (ZoomIt "Draw", Ctrl+2 there) — flagship
@@ -43,20 +49,22 @@ palette, single-letter tool shortcuts (P/A/L/B/E/T/H/V), bottom hint bar,
 save-cancel restores the session instead of losing drawings. Manual checklist
 items SD1–SD11 added to TESTING.md — Jeff verifies before release.
 
-## Phase 2 — Frozen Zoom mode + board modes (one session)
+## Phase 2 — Frozen Zoom mode + board modes ✅ DONE (2026-07-02; awaiting Jeff's manual check ZM1–ZM11 + SD12)
 
-Hotkey (default ⌃⇧Z) freezes the screen into the same overlay window, starts
-zoomed 1×, scroll wheel zooms toward the cursor (up to ~8×), mouse-move pans
-(ZoomIt style), double-click or Esc exits.
-
-- Zoom is a transform on the overlay's image view — capture code unchanged
-- Entering draw (any tool key or ⌃⇧D while zoomed) freezes the current
-  zoom/pan and lets you annotate the magnified view; copy/save exports what
-  you see (viewport crop), matching ZoomIt behavior
-- Whiteboard (W) / blackboard (K) inside Draw mode: swap the screenshot for
-  solid white/black — trivial once Phase 1 exists
-- Unit tests: zoom-toward-cursor math, pan clamping, viewport-crop geometry
-  (pure functions, easy to test)
+Shipped as designed: `Sources/ScreenZoom.swift` holds pure `ZoomMath`
+(fraction-mapped pan means the point under the cursor stays fixed while
+zooming — one function gives both behaviors), a pure `ScreenZoomKeys` mapper,
+and `ScreenZoomController` with an AppKit zoom surface (scroll/arrow zoom to
+8×, mouse-move pan, double-click/Esc exit, ⌘C/⌘S/⌘E export the viewport,
+live zoom factor in the hint bar). Any tool key (or ⌃⇧D) hands a
+viewport-cropped Capture to the Phase 1 ScreenDrawController, which gained
+`initialTool` + a computed fitScale so crops display magnified; annotations
+land on the crop so exports are exactly what's on screen. W/K whiteboard/
+blackboard toggles in draw mode via undoable `EditorDocument.replaceBaseImage`
+(+ two strip buttons). ⌃⇧Z hotkey wired through AppSettings/Settings/menu.
+16 new unit tests (110 total, all green): zoom-toward-cursor invariance, pan
+clamping, viewport-crop geometry, zoom keys, board keys, base-image undo.
+Manual checklist ZM1–ZM11 and SD12 added to TESTING.md.
 
 ## Phase 3 — Break timer, polish, release v2.0.0 (one session)
 

@@ -69,6 +69,7 @@ struct SettingsView: View {
                 HotkeyRecorder(title: "Capture Window", hotkey: $settings.windowHotkey, defaultValue: .defaultWindow)
                 HotkeyRecorder(title: "Capture Full Screen", hotkey: $settings.fullScreenHotkey, defaultValue: .defaultFullScreen)
                 HotkeyRecorder(title: "Draw on Screen", hotkey: $settings.screenDrawHotkey, defaultValue: .defaultScreenDraw)
+                HotkeyRecorder(title: "Zoom Screen", hotkey: $settings.zoomHotkey, defaultValue: .defaultZoom)
             }
 
             Section("Capture") {

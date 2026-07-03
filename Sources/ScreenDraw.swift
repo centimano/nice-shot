@@ -19,6 +19,14 @@ enum ScreenDrawCommand: Equatable {
     case deleteSelection
     case clear
     case selectTool(Tool)
+    case board(BoardStyle)
+}
+
+/// ZoomIt-style board backgrounds: swap the frozen screenshot for a solid
+/// white or black canvas. Pressing the same key again restores the screenshot.
+enum BoardStyle: Hashable {
+    case white
+    case black
 }
 
 enum ScreenDrawKeys {
@@ -57,6 +65,8 @@ enum ScreenDrawKeys {
         case "b": return .selectTool(.box)
         case "e": return .selectTool(.ellipse)
         case "t": return .selectTool(.text)
+        case "w": return .board(.white)
+        case "k": return .board(.black)
         default: return nil
         }
     }
@@ -77,21 +87,33 @@ final class ScreenDrawController {
     private var keyMonitor: Any?
     private var completion: ((Result) -> Void)?
     private var previousApp: NSRunningApplication?
+    private var boardCache: [BoardStyle: CGImage] = [:]
 
-    init(capture: Capture) {
+    init(capture: Capture, initialTool: Tool = .pen) {
         self.capture = capture
         self.doc = EditorDocument(capture: capture)
-        doc.tool = .pen
+        doc.tool = initialTool
     }
 
-    func begin(on screen: NSScreen, completion: @escaping (Result) -> Void) {
+    /// `restoringFocusTo` lets the zoom-mode handoff pass along the app that
+    /// was frontmost before zoom started (by handoff time we are frontmost).
+    func begin(
+        on screen: NSScreen,
+        restoringFocusTo: NSRunningApplication? = nil,
+        completion: @escaping (Result) -> Void
+    ) {
         self.completion = completion
-        previousApp = NSWorkspace.shared.frontmostApplication
+        previousApp = restoringFocusTo ?? NSWorkspace.shared.frontmostApplication
 
-        let root = ScreenDrawView(doc: doc) { [weak self] command in
+        // Fullscreen captures show 1:1; viewport crops from zoom mode are
+        // smaller than the screen and scale up to fill it (staying magnified).
+        let fitScale = capture.image.width > 0
+            ? screen.frame.width / CGFloat(capture.image.width)
+            : 1 / doc.unit
+        let root = ScreenDrawView(doc: doc, fitScale: fitScale) { [weak self] command in
             self?.perform(command)
         }
-        let w = ScreenDrawWindow(contentRect: screen.frame)
+        let w = ScreenOverlayWindow(contentRect: screen.frame)
         w.contentView = NSHostingView(rootView: root)
         window = w
         w.orderFrontRegardless()
@@ -114,6 +136,7 @@ final class ScreenDrawController {
     private func perform(_ command: ScreenDrawCommand) {
         switch command {
         case .selectTool(let tool): doc.tool = tool
+        case .board(let style): toggleBoard(style)
         case .endTextEditing: doc.endTextEditing()
         case .undo: doc.undo()
         case .redo: doc.redo()
@@ -126,6 +149,35 @@ final class ScreenDrawController {
             doc.tool = .select
             finish(.openEditor(capture, doc))
         }
+    }
+
+    /// Swap in a solid white/black board, or back to the screenshot when the
+    /// same board is already showing. Undoable like any other edit; identity
+    /// comparison against the cached board image keeps the toggle correct
+    /// even across undo/redo.
+    private func toggleBoard(_ style: BoardStyle) {
+        guard let board = boardImage(style) else { return }
+        doc.replaceBaseImage(with: doc.baseImage === board ? capture.image : board)
+    }
+
+    private func boardImage(_ style: BoardStyle) -> CGImage? {
+        if let cached = boardCache[style] { return cached }
+        let size = doc.pixelSize
+        guard let ctx = CGContext(
+            data: nil,
+            width: Int(size.width),
+            height: Int(size.height),
+            bitsPerComponent: 8,
+            bytesPerRow: 0,
+            space: CGColorSpaceCreateDeviceRGB(),
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        ) else { return nil }
+        let level: CGFloat = style == .white ? 1 : 0
+        ctx.setFillColor(CGColor(red: level, green: level, blue: level, alpha: 1))
+        ctx.fill(CGRect(origin: .zero, size: size))
+        let image = ctx.makeImage()
+        boardCache[style] = image
+        return image
     }
 
     private func copyAndClose() {
@@ -175,9 +227,9 @@ final class ScreenDrawController {
     }
 }
 
-// MARK: - Window
+// MARK: - Window (shared with zoom mode)
 
-private final class ScreenDrawWindow: NSWindow {
+final class ScreenOverlayWindow: NSWindow {
     init(contentRect: NSRect) {
         super.init(contentRect: contentRect, styleMask: .borderless, backing: .buffered, defer: false)
         isOpaque = true
@@ -195,11 +247,12 @@ private final class ScreenDrawWindow: NSWindow {
 
 struct ScreenDrawView: View {
     @ObservedObject var doc: EditorDocument
+    let fitScale: CGFloat
     let perform: (ScreenDrawCommand) -> Void
 
     var body: some View {
         ZStack(alignment: .top) {
-            EditorCanvas(doc: doc, fitScale: 1 / doc.unit)
+            EditorCanvas(doc: doc, fitScale: fitScale)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             ScreenDrawStrip(doc: doc, perform: perform)
                 .padding(.top, 12)
@@ -282,6 +335,11 @@ private struct ScreenDrawStrip: View {
                 }
             }
 
+            HStack(spacing: 5) {
+                boardButton(.white, help: "Whiteboard (W)")
+                boardButton(.black, help: "Blackboard (K)")
+            }
+
             Menu {
                 ForEach(strokeWidths, id: \.self) { width in
                     Button {
@@ -318,6 +376,19 @@ private struct ScreenDrawStrip: View {
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
         .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(.white.opacity(0.15)))
         .shadow(color: .black.opacity(0.35), radius: 12, y: 4)
+    }
+
+    private func boardButton(_ style: BoardStyle, help: String) -> some View {
+        Button {
+            perform(.board(style))
+        } label: {
+            RoundedRectangle(cornerRadius: 3)
+                .fill(style == .white ? Color.white : Color.black)
+                .frame(width: 18, height: 13)
+                .overlay(RoundedRectangle(cornerRadius: 3).strokeBorder(.primary.opacity(0.35), lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+        .help(help)
     }
 
     private func iconButton(

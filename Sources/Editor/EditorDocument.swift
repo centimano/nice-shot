@@ -144,6 +144,15 @@ final class EditorDocument: ObservableObject {
         commit(pre)
     }
 
+    /// Swap the base image (whiteboard/blackboard modes) as one undoable
+    /// step, keeping annotations in place.
+    func replaceBaseImage(with image: CGImage) {
+        endTextEditing()
+        let pre = snapshot()
+        baseImage = image
+        commit(pre)
+    }
+
     // MARK: - Text editing
 
     /// Pass `pre` when the annotation was just created so its creation and the

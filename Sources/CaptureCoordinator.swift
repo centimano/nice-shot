@@ -10,6 +10,7 @@ final class CaptureCoordinator {
     private var countdown: CountdownHUD?
     private var editors: [EditorWindow] = []
     private var screenDraw: ScreenDrawController?
+    private var screenZoom: ScreenZoomController?
 
     /// Frozen per-display images taken when region selection starts. They feed
     /// the magnifier loupe and become the capture itself (cropped), so the
@@ -72,6 +73,12 @@ final class CaptureCoordinator {
     /// annotate directly on it. The cursor is never baked into the frozen
     /// image — it would sit wherever the hotkey was pressed, under drawings.
     func drawOnScreen() {
+        // The draw hotkey while zoom mode is active freezes the current
+        // zoomed view and starts annotating it (ZoomIt behavior).
+        if let screenZoom {
+            screenZoom.enterDraw()
+            return
+        }
         guard ensurePermission(), screenDraw == nil, overlay == nil else { return }
         let screen = Self.screenUnderMouse()
         Task {
@@ -83,16 +90,59 @@ final class CaptureCoordinator {
                 )
                 guard self.screenDraw == nil else { return }
                 let capture = Capture(image: image, scale: screen.backingScaleFactor, sourceScreen: screen)
-                let controller = ScreenDrawController(capture: capture)
-                self.screenDraw = controller
+                self.presentScreenDraw(capture, on: screen)
+            } catch {
+                self.showError(error)
+            }
+        }
+    }
+
+    /// ZoomIt-style frozen zoom: freeze the display under the mouse, scroll
+    /// to zoom toward the cursor, move to pan; tool keys hand the viewport
+    /// off to screen draw mode.
+    func zoomScreen() {
+        guard ensurePermission(), screenZoom == nil, screenDraw == nil, overlay == nil else { return }
+        let screen = Self.screenUnderMouse()
+        Task {
+            do {
+                let image = try await CaptureEngine.captureDisplay(
+                    screen: screen,
+                    cropTo: nil,
+                    showsCursor: false
+                )
+                guard self.screenZoom == nil, self.screenDraw == nil else { return }
+                let capture = Capture(image: image, scale: screen.backingScaleFactor, sourceScreen: screen)
+                let controller = ScreenZoomController(capture: capture)
+                self.screenZoom = controller
                 controller.begin(on: screen) { [weak self] result in
-                    self?.screenDraw = nil
-                    if case .openEditor(let capture, let document) = result {
-                        self?.openEditor(for: capture, document: document)
+                    self?.screenZoom = nil
+                    switch result {
+                    case .dismissed:
+                        break
+                    case .enterDraw(let viewport, let tool, let previousApp):
+                        self?.presentScreenDraw(viewport, on: screen, tool: tool, restoringFocusTo: previousApp)
+                    case .openEditor(let viewport):
+                        self?.openEditor(for: viewport)
                     }
                 }
             } catch {
                 self.showError(error)
+            }
+        }
+    }
+
+    private func presentScreenDraw(
+        _ capture: Capture,
+        on screen: NSScreen,
+        tool: Tool = .pen,
+        restoringFocusTo: NSRunningApplication? = nil
+    ) {
+        let controller = ScreenDrawController(capture: capture, initialTool: tool)
+        screenDraw = controller
+        controller.begin(on: screen, restoringFocusTo: restoringFocusTo) { [weak self] result in
+            self?.screenDraw = nil
+            if case .openEditor(let capture, let document) = result {
+                self?.openEditor(for: capture, document: document)
             }
         }
     }

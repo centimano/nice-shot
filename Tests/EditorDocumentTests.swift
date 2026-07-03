@@ -219,6 +219,27 @@ struct EditorDocumentTests {
         #expect(rect == CGRect(x: 60, y: 30, width: 90, height: 60))
     }
 
+    @Test func replaceBaseImageIsUndoable() {
+        let doc = makeDoc()
+        let original = doc.baseImage
+        let board = makeTestImage(width: 200, height: 100)
+
+        doc.replaceBaseImage(with: board)
+        #expect(doc.baseImage === board)
+
+        doc.undo()
+        #expect(doc.baseImage === original)
+        doc.redo()
+        #expect(doc.baseImage === board)
+    }
+
+    @Test func replaceBaseImageKeepsAnnotations() {
+        let doc = makeDoc()
+        doc.add(sampleBox)
+        doc.replaceBaseImage(with: makeTestImage(width: 200, height: 100))
+        #expect(doc.annotations.count == 1)
+    }
+
     // MARK: Derived images
 
     @Test func unitNeverBelowOne() {

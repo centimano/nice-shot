@@ -6,9 +6,10 @@
 swift run NiceShotTests
 ```
 
-94 unit tests cover the logic core — annotation geometry (bounds, hit-testing,
+110 unit tests cover the logic core — annotation geometry (bounds, hit-testing,
 move, resize handles), editor undo/redo, crop math, the text-editing lifecycle,
-hotkey encoding/display, screen draw mode's key handling, screen-coordinate
+hotkey encoding/display, screen draw and frozen zoom key handling, zoom
+viewport math (zoom-toward-cursor, pan clamping, viewport crop), screen-coordinate
 conversion, filename uniquing, PNG DPI metadata — plus rendering smoke tests that draw every annotation type
 through the real export pipeline and verify pixels changed where they should
 (blur obscures only its region, redaction is opaque black, effects alter edges,
@@ -45,6 +46,20 @@ SD8. ⌘E → full editor opens with the frozen screen and all drawings editable
 SD9. Esc → closes without saving; focus returns to the previous app; no stray windows remain.
 SD10. Multi-monitor: mode opens on the display under the mouse.
 SD11. Menu bar → "Draw on Screen" starts the mode; Settings → "Draw on Screen" hotkey can be rebound and the new combo works.
+SD12. W → screenshot swaps to a solid whiteboard (drawings stay); W again brings the screenshot back; K does the same with a blackboard; ⌘Z undoes a board swap. The two small white/black buttons in the strip do the same.
+
+### Frozen zoom (v2)
+ZM1. ⌃⇧Z → screen freezes at 1× with a hint bar at the bottom; nothing looks different otherwise (it's showing the frozen screen 1:1).
+ZM2. Scroll up → zooms in toward the mouse cursor (the point under the cursor stays put); scroll down zooms back out; zoom stops at 8× and at 1×; the hint shows the current zoom factor. ↑/↓ arrows also zoom.
+ZM3. While zoomed, moving the mouse pans — far left/right/top/bottom of the screen shows the matching edge of the image.
+ZM4. Esc or double-click → exits; focus returns to the previous app.
+ZM5. While zoomed, ⌘C → closes and pasting into Preview shows exactly the magnified view that was on screen (not the full screen).
+ZM6. While zoomed, ⌘S → save dialog; the saved PNG is the zoomed viewport. Cancel brings zoom mode back.
+ZM7. While zoomed, press P (or any tool letter, or ⌃⇧D) → the view stays exactly as it was (still magnified) and the draw tool strip appears; drawing, W/K boards, undo, and ⌘C/⌘S all work on the magnified view; ⌘C exports what you see.
+ZM8. At 1× (no zoom), pressing P enters draw mode with the full screen — same as ⌃⇧D.
+ZM9. While zoomed, ⌘E → the full editor opens with just the viewport crop.
+ZM10. Menu bar → "Zoom Screen" starts the mode; Settings → "Zoom Screen" hotkey can be rebound and the new combo works.
+ZM11. Multi-monitor: mode opens on the display under the mouse; scroll/pan stay on that display.
 
 ### Post-capture panel
 6. Panel appears bottom-right without stealing keyboard focus.

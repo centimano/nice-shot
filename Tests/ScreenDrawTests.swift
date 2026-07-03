@@ -65,6 +65,16 @@ struct ScreenDrawKeysTests {
         #expect(command([], "t") == .selectTool(.text))
     }
 
+    @Test func boardKeysSwapTheBackground() {
+        #expect(command([], "w") == .board(.white))
+        #expect(command([], "k") == .board(.black))
+    }
+
+    @Test func boardKeysPassThroughWhileTyping() {
+        #expect(command([], "w", editing: true) == nil)
+        #expect(command([], "k", editing: true) == nil)
+    }
+
     @Test func shiftedLettersStillSelectTools() {
         #expect(command(.shift, "P") == .selectTool(.pen))
     }
