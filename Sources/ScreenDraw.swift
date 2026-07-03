@@ -266,6 +266,7 @@ struct ScreenDrawView: View {
                     .background(.regularMaterial, in: Capsule())
                     .padding(.bottom, 10)
             }
+            .allowsHitTesting(false)
         }
         .ignoresSafeArea()
     }

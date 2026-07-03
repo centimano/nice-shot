@@ -13,6 +13,12 @@ Spec requirement IDs (CAP-/OVR-/EDT-/RED-/BEA-/EXP-) refer to the spec PDF.
    Arrow keys move the selection 1 px, Shift+arrows 10 px. Selection and
    pixel-coordinate model already exist.
 
+6. **Warn on duplicate hotkeys** *(found in v2 quality pass, July 2026)*
+   Recording a shortcut already used by another action silently breaks the
+   second one (RegisterEventHotKey fails with only a console log). The
+   recorder should refuse or warn. Needs a small design decision: block,
+   swap, or warn-and-allow.
+
 ## Tier 2 — Medium (worth doing, needs a design pass or a full session)
 
 9. **Filename templates** *(EXP-003, P1)*

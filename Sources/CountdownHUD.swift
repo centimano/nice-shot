@@ -35,9 +35,14 @@ final class CountdownHUD {
         panel.contentView = hosting
         panel.orderFrontRegardless()
 
-        timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
+        // .common keeps the countdown ticking while a menu is open or a
+        // window is being dragged into position (event-tracking run-loop
+        // modes), which is exactly when timed captures get used.
+        let timer = Timer(timeInterval: 1, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated { self?.tick() }
         }
+        RunLoop.main.add(timer, forMode: .common)
+        self.timer = timer
     }
 
     private func tick() {

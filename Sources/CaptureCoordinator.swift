@@ -22,16 +22,30 @@ final class CaptureCoordinator {
     func captureRegion() {
         guard ensurePermission(), overlay == nil else { return }
         Task {
-            var snapshots: [CGDirectDisplayID: CGImage] = [:]
-            for screen in NSScreen.screens {
-                guard let id = screen.displayID else { continue }
-                if let image = try? await CaptureEngine.captureDisplay(
-                    screen: screen,
-                    cropTo: nil,
-                    showsCursor: AppSettings.shared.showCursor
-                ) {
-                    snapshots[id] = image
+            // Capture all displays concurrently — each is a full
+            // ScreenCaptureKit round-trip, so sequential snapshots would
+            // delay the overlay by the sum instead of the slowest one.
+            let showCursor = AppSettings.shared.showCursor
+            let snapshots = await withTaskGroup(
+                of: (CGDirectDisplayID, CGImage)?.self,
+                returning: [CGDirectDisplayID: CGImage].self
+            ) { group in
+                for screen in NSScreen.screens {
+                    guard let id = screen.displayID else { continue }
+                    group.addTask {
+                        guard let image = try? await CaptureEngine.captureDisplay(
+                            screen: screen,
+                            cropTo: nil,
+                            showsCursor: showCursor
+                        ) else { return nil }
+                        return (id, image)
+                    }
                 }
+                var snapshots: [CGDirectDisplayID: CGImage] = [:]
+                for await pair in group {
+                    if let (id, image) = pair { snapshots[id] = image }
+                }
+                return snapshots
             }
             guard self.overlay == nil else { return }
             self.regionSnapshots = snapshots

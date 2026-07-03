@@ -366,6 +366,6 @@ private struct ScreenZoomView: View {
         let zoom = model.magnification <= 1
             ? "scroll to zoom"
             : String(format: "%.1f×", model.magnification)
-        return "\(zoom) · move to pan · P/A/B… to draw · ⌘C copy · ⌘S save · esc close"
+        return "\(zoom) · move to pan · P/A/B… to draw · ⌘C copy · ⌘S save · ⌘E editor · esc close"
     }
 }

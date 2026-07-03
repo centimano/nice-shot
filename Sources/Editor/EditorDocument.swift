@@ -213,6 +213,9 @@ final class EditorDocument: ObservableObject {
 
     private var pixelatedCache: CGImage?
 
+    /// CIContext is expensive to create; one instance serves every document.
+    private static let ciContext = CIContext()
+
     var pixelated: CGImage? {
         if let pixelatedCache { return pixelatedCache }
         let input = CIImage(cgImage: baseImage)
@@ -221,8 +224,7 @@ final class EditorDocument: ObservableObject {
         filter.setValue(max(10, min(pixelSize.width, pixelSize.height) / 45), forKey: kCIInputScaleKey)
         filter.setValue(CIVector(x: 0, y: 0), forKey: kCIInputCenterKey)
         guard let output = filter.outputImage else { return nil }
-        let context = CIContext()
-        pixelatedCache = context.createCGImage(output.cropped(to: input.extent), from: input.extent)
+        pixelatedCache = Self.ciContext.createCGImage(output.cropped(to: input.extent), from: input.extent)
         return pixelatedCache
     }
 
