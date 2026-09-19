@@ -65,11 +65,20 @@ struct SettingsView: View {
     var body: some View {
         Form {
             Section("Keyboard Shortcuts") {
-                HotkeyRecorder(title: "Capture Region", hotkey: $settings.regionHotkey, defaultValue: .defaultRegion)
-                HotkeyRecorder(title: "Capture Window", hotkey: $settings.windowHotkey, defaultValue: .defaultWindow)
-                HotkeyRecorder(title: "Capture Full Screen", hotkey: $settings.fullScreenHotkey, defaultValue: .defaultFullScreen)
-                HotkeyRecorder(title: "Draw on Screen", hotkey: $settings.screenDrawHotkey, defaultValue: .defaultScreenDraw)
-                HotkeyRecorder(title: "Zoom Screen", hotkey: $settings.zoomHotkey, defaultValue: .defaultZoom)
+                recorder("Capture Region", $settings.regionHotkey, .defaultRegion)
+                recorder("Capture Window", $settings.windowHotkey, .defaultWindow)
+                recorder("Capture Full Screen", $settings.fullScreenHotkey, .defaultFullScreen)
+                recorder("Draw on Screen", $settings.screenDrawHotkey, .defaultScreenDraw)
+                recorder("Zoom Screen", $settings.zoomHotkey, .defaultZoom)
+                if !settings.unregisteredHotkeys.isEmpty {
+                    Label(
+                        "macOS refused the shortcut for \(settings.unregisteredHotkeys.joined(separator: ", ")). "
+                            + "Another app is probably using it — choose a different combination.",
+                        systemImage: "exclamationmark.triangle.fill"
+                    )
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+                }
             }
 
             Section("Capture") {
@@ -127,6 +136,18 @@ struct SettingsView: View {
         .frame(minWidth: 440, maxWidth: .infinity, minHeight: 420, maxHeight: .infinity)
     }
 
+    private func recorder(_ title: String, _ hotkey: Binding<Hotkey>, _ defaultValue: Hotkey) -> some View {
+        HotkeyRecorder(
+            title: title,
+            hotkey: hotkey,
+            defaultValue: defaultValue,
+            conflictingAction: { candidate in
+                candidate.conflict(among: settings.allHotkeys.filter { $0.name != title })
+            },
+            failedToRegister: settings.unregisteredHotkeys.contains(title)
+        )
+    }
+
     private var launchAtLoginBinding: Binding<Bool> {
         Binding(
             get: { settings.launchAtLogin },
@@ -163,26 +184,49 @@ private struct HotkeyRecorder: View {
     let title: String
     @Binding var hotkey: Hotkey
     let defaultValue: Hotkey
+    /// Returns the name of another action already using a candidate combo.
+    var conflictingAction: (Hotkey) -> String? = { _ in nil }
+    /// True when macOS refused to register the current combination.
+    var failedToRegister = false
 
     @State private var recording = false
     @State private var monitor: Any?
+    @State private var conflict: String?
 
     var body: some View {
-        HStack {
-            Text(title)
-            Spacer()
-            Button(recording ? "Press shortcut…" : hotkey.display) {
-                recording ? stopRecording() : startRecording()
+        VStack(alignment: .trailing, spacing: 2) {
+            HStack {
+                Text(title)
+                Spacer()
+                Button(recording ? "Press shortcut…" : hotkey.display) {
+                    recording ? stopRecording() : startRecording()
+                }
+                .frame(minWidth: 110)
+                Button {
+                    // The default may itself be taken if another action was
+                    // rebound onto it; refuse the same way recording does.
+                    if let owner = conflictingAction(defaultValue) {
+                        conflict = owner
+                    } else {
+                        conflict = nil
+                        hotkey = defaultValue
+                    }
+                } label: {
+                    Image(systemName: "arrow.counterclockwise")
+                }
+                .buttonStyle(.borderless)
+                .disabled(hotkey == defaultValue)
+                .help("Reset to default")
             }
-            .frame(minWidth: 110)
-            Button {
-                hotkey = defaultValue
-            } label: {
-                Image(systemName: "arrow.counterclockwise")
+            if let conflict {
+                Text("Already used by \(conflict). Press a different shortcut.")
+                    .font(.caption)
+                    .foregroundStyle(.red)
+            } else if failedToRegister {
+                Text("Not active — macOS refused this combination.")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
             }
-            .buttonStyle(.borderless)
-            .disabled(hotkey == defaultValue)
-            .help("Reset to default")
         }
         .onDisappear { stopRecording() }
     }
@@ -196,8 +240,14 @@ private struct HotkeyRecorder: View {
                 return nil
             }
             if let newHotkey = Hotkey(event: event) {
-                hotkey = newHotkey
-                stopRecording()
+                if let owner = conflictingAction(newHotkey) {
+                    // Keep recording so the user can try another combo.
+                    conflict = owner
+                } else {
+                    conflict = nil
+                    hotkey = newHotkey
+                    stopRecording()
+                }
             }
             return nil // swallow keystrokes while recording
         }

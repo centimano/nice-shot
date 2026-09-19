@@ -14,6 +14,66 @@ struct EditorDocumentTests {
         .test(.box(CGRect(x: 60, y: 30, width: 40, height: 20)))
     }
 
+    // MARK: Unsaved-changes tracking (drives the close-window prompt)
+
+    @Test func freshDocumentHasNoUnsavedChanges() {
+        #expect(!makeDoc().hasUnsavedChanges)
+    }
+
+    @Test func addingWorkMakesDocumentDirtyUntilExported() {
+        let doc = makeDoc()
+        doc.add(sampleBox)
+        #expect(doc.hasUnsavedChanges)
+        doc.markExported()
+        #expect(!doc.hasUnsavedChanges)
+    }
+
+    @Test func editingAfterExportIsDirtyAgain() {
+        let doc = makeDoc()
+        doc.add(sampleBox)
+        doc.markExported()
+        doc.add(sampleBox)
+        #expect(doc.hasUnsavedChanges)
+        // Undoing back to the exported state is not dirty either way — the
+        // token moved, but so did the content; undoing *everything* is clean.
+        doc.undo()
+        doc.undo()
+        #expect(!doc.hasUnsavedChanges)
+    }
+
+    @Test func undoingEverythingClearsDirtyState() {
+        let doc = makeDoc()
+        doc.add(sampleBox)
+        doc.undo()
+        #expect(!doc.hasUnsavedChanges)
+        doc.redo()
+        #expect(doc.hasUnsavedChanges)
+    }
+
+    @Test func copyFlattenedMarksExported() {
+        let doc = makeDoc()
+        doc.add(sampleBox)
+        doc.copyFlattened()
+        #expect(!doc.hasUnsavedChanges)
+    }
+
+    // MARK: Export fast path
+
+    @Test func renderFinalWithoutAnnotationsReturnsTheCaptureItself() {
+        let doc = makeDoc()
+        #expect(!doc.needsFlattening)
+        #expect(doc.renderFinal() === doc.baseImage)
+    }
+
+    @Test func effectsAloneRequireFlattening() {
+        let doc = makeDoc()
+        doc.shadowOn = true
+        #expect(doc.needsFlattening)
+        doc.shadowOn = false
+        doc.cornerRadius = 8
+        #expect(doc.needsFlattening)
+    }
+
     // MARK: Undo / redo
 
     @Test func addIsUndoable() {
@@ -194,6 +254,20 @@ struct EditorDocumentTests {
         doc.beginTextEditing(annotation.id, pre: pre)
         doc.endTextEditing()
         #expect(doc.annotations.count == 1, "an empty callout bubble is still visible content")
+    }
+
+    @Test func reEditWithoutChangeAddsNoUndoStep() {
+        let doc = makeDoc()
+        var text = Annotation.test(.text(CGPoint(x: 10, y: 10)), text: "Hello")
+        text.text = "Hello"
+        doc.add(text)
+        #expect(doc.canUndo)
+        doc.beginTextEditing(text.id)
+        doc.endTextEditing()
+        // Only the original add is on the stack: one undo empties the doc.
+        doc.undo()
+        #expect(doc.annotations.isEmpty)
+        #expect(!doc.canUndo)
     }
 
     @Test func reEditCommitsTextChange() {

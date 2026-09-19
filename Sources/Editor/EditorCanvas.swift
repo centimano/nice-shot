@@ -29,7 +29,11 @@ struct EditorCanvas: View {
                 in: CGRect(origin: .zero, size: doc.pixelSize)
             )
 
-            for annotation in doc.annotations where annotation.id != doc.editingID {
+            for var annotation in doc.annotations {
+                // The inline text field shows the text being edited; the
+                // annotation itself still draws (a callout keeps its bubble)
+                // with its text blanked so the two don't overlap.
+                if annotation.id == doc.editingID { annotation.text = "" }
                 Renderer.draw(
                     annotation,
                     in: &ctx,

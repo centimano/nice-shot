@@ -15,6 +15,15 @@ struct GeometryTests {
         #expect(rect == CGRect(x: 5, y: 5, width: 0, height: 0))
     }
 
+    // MARK: Drag clamping (mouse keeps reporting past the screen edge)
+
+    @Test func clampKeepsPointsInsideBounds() {
+        let bounds = CGRect(x: 0, y: 0, width: 1440, height: 900)
+        #expect(ScreenGeometry.clamp(CGPoint(x: -20, y: 50), to: bounds) == CGPoint(x: 0, y: 50))
+        #expect(ScreenGeometry.clamp(CGPoint(x: 1500, y: 950), to: bounds) == CGPoint(x: 1440, y: 900))
+        #expect(ScreenGeometry.clamp(CGPoint(x: 700, y: 400), to: bounds) == CGPoint(x: 700, y: 400))
+    }
+
     // MARK: Point→pixel crop conversion
 
     @Test func pixelRectScalesAndRounds() {

@@ -7,11 +7,12 @@ struct Hotkey: Codable, Equatable {
     var keyCode: UInt32
     var carbonModifiers: UInt32
 
-    static let defaultRegion = Hotkey(keyCode: UInt32(kVK_ANSI_4), carbonModifiers: UInt32(controlKey | shiftKey))
-    static let defaultWindow = Hotkey(keyCode: UInt32(kVK_ANSI_5), carbonModifiers: UInt32(controlKey | shiftKey))
-    static let defaultFullScreen = Hotkey(keyCode: UInt32(kVK_ANSI_3), carbonModifiers: UInt32(controlKey | shiftKey))
-    static let defaultScreenDraw = Hotkey(keyCode: UInt32(kVK_ANSI_D), carbonModifiers: UInt32(controlKey | shiftKey))
-    static let defaultZoom = Hotkey(keyCode: UInt32(kVK_ANSI_Z), carbonModifiers: UInt32(controlKey | shiftKey))
+    // ⇧⌘ + a mnemonic letter: Screen region, Window, Full screen, Draw, Zoom.
+    static let defaultRegion = Hotkey(keyCode: UInt32(kVK_ANSI_S), carbonModifiers: UInt32(cmdKey | shiftKey))
+    static let defaultWindow = Hotkey(keyCode: UInt32(kVK_ANSI_W), carbonModifiers: UInt32(cmdKey | shiftKey))
+    static let defaultFullScreen = Hotkey(keyCode: UInt32(kVK_ANSI_F), carbonModifiers: UInt32(cmdKey | shiftKey))
+    static let defaultScreenDraw = Hotkey(keyCode: UInt32(kVK_ANSI_D), carbonModifiers: UInt32(cmdKey | shiftKey))
+    static let defaultZoom = Hotkey(keyCode: UInt32(kVK_ANSI_Z), carbonModifiers: UInt32(cmdKey | shiftKey))
 
     init(keyCode: UInt32, carbonModifiers: UInt32) {
         self.keyCode = keyCode
@@ -38,6 +39,12 @@ struct Hotkey: Codable, Equatable {
         if carbonModifiers & UInt32(optionKey) != 0 { flags.insert(.option) }
         if carbonModifiers & UInt32(controlKey) != 0 { flags.insert(.control) }
         return flags
+    }
+
+    /// Name of the action in `others` already bound to this combination, if
+    /// any — used to refuse duplicate shortcuts in Settings.
+    func conflict(among others: [(name: String, hotkey: Hotkey)]) -> String? {
+        others.first { $0.hotkey == self }?.name
     }
 
     var display: String {
@@ -141,6 +148,21 @@ final class AppSettings: ObservableObject {
     }
     /// Mirrors SMAppService state; mutate via `setLaunchAtLogin`.
     @Published private(set) var launchAtLogin: Bool
+
+    /// Names of actions whose shortcut the system refused to register (another
+    /// app owns the combination). Shown in Settings; not persisted.
+    @Published var unregisteredHotkeys: [String] = []
+
+    /// Every action's current shortcut, for duplicate checks.
+    var allHotkeys: [(name: String, hotkey: Hotkey)] {
+        [
+            ("Capture Region", regionHotkey),
+            ("Capture Window", windowHotkey),
+            ("Capture Full Screen", fullScreenHotkey),
+            ("Draw on Screen", screenDrawHotkey),
+            ("Zoom Screen", zoomHotkey),
+        ]
+    }
 
     var saveFolder: URL {
         URL(fileURLWithPath: (saveFolderPath as NSString).expandingTildeInPath, isDirectory: true)

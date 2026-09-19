@@ -113,7 +113,7 @@ struct EditorToolbar: View {
 
             effectsMenu
 
-            ShareButton(image: { doc.renderFinal() }, scale: doc.scale)
+            ShareButton(image: { doc.renderForShare() }, scale: doc.scale)
 
             Button {
                 doc.copyFlattened()
@@ -218,7 +218,9 @@ struct EditorToolbar: View {
                 Image(systemName: "arrow.uturn.backward")
             }
             .buttonStyle(.borderless)
-            .disabled(!doc.canUndo)
+            // While typing in an annotation ⌘Z belongs to the text field
+            // (native text undo), not the document history.
+            .disabled(!doc.canUndo || doc.editingID != nil)
             .keyboardShortcut("z", modifiers: .command)
             .help("Undo (⌘Z)")
 
@@ -228,7 +230,7 @@ struct EditorToolbar: View {
                 Image(systemName: "arrow.uturn.forward")
             }
             .buttonStyle(.borderless)
-            .disabled(!doc.canRedo)
+            .disabled(!doc.canRedo || doc.editingID != nil)
             .keyboardShortcut("z", modifiers: [.command, .shift])
             .help("Redo (⇧⌘Z)")
 

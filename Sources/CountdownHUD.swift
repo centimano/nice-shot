@@ -34,6 +34,7 @@ final class CountdownHUD {
         panel.isReleasedWhenClosed = false
         panel.contentView = hosting
         panel.orderFrontRegardless()
+        CaptureExclusions.add(panel)
 
         // .common keeps the countdown ticking while a menu is open or a
         // window is being dragged into position (event-tracking run-loop
@@ -50,6 +51,7 @@ final class CountdownHUD {
         if remaining <= 0 {
             timer?.invalidate()
             timer = nil
+            CaptureExclusions.remove(panel)
             panel.orderOut(nil)
             // Let the HUD vanish from screen before the capture happens.
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [onFire] in

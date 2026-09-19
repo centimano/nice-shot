@@ -130,7 +130,37 @@ struct Annotation: Identifiable {
     }
 
     func hitTest(_ point: CGPoint, unit: CGFloat) -> Bool {
-        bounds(unit: unit).insetBy(dx: -8 * unit, dy: -8 * unit).contains(point)
+        let slop = 8 * unit
+        switch shape {
+        case .pen(let pts), .highlighter(let pts):
+            // Freehand strokes are hit along the stroke itself, not their
+            // bounding box, so a loose squiggle doesn't swallow clicks meant
+            // for whatever it was drawn around.
+            guard bounds(unit: unit).insetBy(dx: -slop, dy: -slop).contains(point) else { return false }
+            let visibleWidth: CGFloat
+            if case .highlighter = shape { visibleWidth = strokeWidth * unit * 4 } else { visibleWidth = strokeWidth * unit }
+            return Annotation.distance(from: point, toPolyline: pts) <= visibleWidth / 2 + slop
+        default:
+            return bounds(unit: unit).insetBy(dx: -slop, dy: -slop).contains(point)
+        }
+    }
+
+    /// Shortest distance from `point` to any segment of the polyline.
+    static func distance(from point: CGPoint, toPolyline pts: [CGPoint]) -> CGFloat {
+        guard let first = pts.first else { return .infinity }
+        guard pts.count > 1 else { return hypot(point.x - first.x, point.y - first.y) }
+        var best = CGFloat.infinity
+        for i in 1..<pts.count {
+            let a = pts[i - 1], b = pts[i]
+            let dx = b.x - a.x, dy = b.y - a.y
+            let lengthSquared = dx * dx + dy * dy
+            let t = lengthSquared > 0
+                ? max(0, min(1, ((point.x - a.x) * dx + (point.y - a.y) * dy) / lengthSquared))
+                : 0
+            let proj = CGPoint(x: a.x + t * dx, y: a.y + t * dy)
+            best = min(best, hypot(point.x - proj.x, point.y - proj.y))
+        }
+        return best
     }
 
     // MARK: - Resize handles

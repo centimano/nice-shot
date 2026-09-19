@@ -60,6 +60,36 @@ struct AnnotationTests {
 
     // MARK: Hit testing
 
+    @Test func penHitsAlongTheStrokeNotItsBoundingBox() {
+        // An L-shaped stroke: its bounding box covers a big empty square.
+        let pen = Annotation.test(.pen([
+            CGPoint(x: 0, y: 0), CGPoint(x: 0, y: 100), CGPoint(x: 100, y: 100),
+        ]), strokeWidth: 4)
+        #expect(pen.hitTest(CGPoint(x: 2, y: 50), unit: 1))      // on the vertical leg
+        #expect(pen.hitTest(CGPoint(x: 60, y: 97), unit: 1))     // on the horizontal leg
+        #expect(!pen.hitTest(CGPoint(x: 60, y: 40), unit: 1))    // inside the box, far from ink
+    }
+
+    @Test func highlighterHitZoneMatchesItsWiderStroke() {
+        let points = [CGPoint(x: 0, y: 50), CGPoint(x: 100, y: 50)]
+        let pen = Annotation.test(.pen(points), strokeWidth: 4)
+        let marker = Annotation.test(.highlighter(points), strokeWidth: 4)
+        // 14 px off the centerline: past the pen's reach (2 + 8 slop) but
+        // within the 4× wider marker's (8 + 8 slop).
+        let probe = CGPoint(x: 50, y: 64)
+        #expect(!pen.hitTest(probe, unit: 1))
+        #expect(marker.hitTest(probe, unit: 1))
+    }
+
+    @Test func distanceToPolylineUsesNearestSegment() {
+        let pts = [CGPoint(x: 0, y: 0), CGPoint(x: 10, y: 0), CGPoint(x: 10, y: 10)]
+        #expect(Annotation.distance(from: CGPoint(x: 5, y: 3), toPolyline: pts) == 3)
+        #expect(Annotation.distance(from: CGPoint(x: 13, y: 5), toPolyline: pts) == 3)
+        // Beyond the end: distance to the last point, not the extended line.
+        #expect(Annotation.distance(from: CGPoint(x: 10, y: 14), toPolyline: pts) == 4)
+        #expect(Annotation.distance(from: CGPoint(x: 3, y: 4), toPolyline: [.zero]) == 5)
+    }
+
     @Test func hitTestInsideAndNearEdge() {
         let annotation = Annotation.test(.box(CGRect(x: 20, y: 20, width: 60, height: 40)))
         #expect(annotation.hitTest(CGPoint(x: 50, y: 40), unit: 1))

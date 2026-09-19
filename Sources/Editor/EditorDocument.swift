@@ -46,6 +46,25 @@ final class EditorDocument: ObservableObject {
         self.scale = capture.scale
     }
 
+    // MARK: - Unsaved-changes tracking
+
+    /// Bumped on every state change that undo tracks; compared against the
+    /// value at the last export to decide whether closing would lose work.
+    @Published private(set) var changeToken = 0
+    private var exportedToken = 0
+
+    /// True when there is undoable work that hasn't been saved, copied, or
+    /// shared since it was made. Undoing everything back to the original
+    /// capture clears it.
+    var hasUnsavedChanges: Bool {
+        canUndo && changeToken != exportedToken
+    }
+
+    /// Call after a successful save/copy/share of the current state.
+    func markExported() {
+        exportedToken = changeToken
+    }
+
     // MARK: - Undo (snapshot-based; annotations are value types)
 
     struct Snapshot {
@@ -69,6 +88,7 @@ final class EditorDocument: ObservableObject {
     func commit(_ pre: Snapshot) {
         undoStack.append(pre)
         redoStack.removeAll()
+        changeToken += 1
     }
 
     func undo() {
@@ -76,6 +96,7 @@ final class EditorDocument: ObservableObject {
         guard let snap = undoStack.popLast() else { return }
         redoStack.append(snapshot())
         restore(snap)
+        changeToken += 1
     }
 
     func redo() {
@@ -83,6 +104,7 @@ final class EditorDocument: ObservableObject {
         guard let snap = redoStack.popLast() else { return }
         undoStack.append(snapshot())
         restore(snap)
+        changeToken += 1
     }
 
     private func restore(_ snap: Snapshot) {
@@ -179,7 +201,10 @@ final class EditorDocument: ObservableObject {
             // Callouts keep their bubble even when empty.
             annotations.removeAll { $0.id == id }
         } else if let pre {
-            commit(pre)
+            // Re-opening an existing annotation and leaving its text alone
+            // is not a change; don't add an empty undo step for it.
+            let unchanged = pre.annotations.first { $0.id == id }?.text == annotation.text
+            if !unchanged { commit(pre) }
         }
     }
 
@@ -236,6 +261,11 @@ final class EditorDocument: ObservableObject {
         selectedID = nil
         cropDraft = nil
 
+        // Nothing to flatten: hand back the capture's own pixels rather than
+        // round-tripping them through the SwiftUI renderer (faster on big
+        // displays, and byte-exact).
+        if !needsFlattening { return baseImage }
+
         let renderer = ImageRenderer(content: ExportRenderView(doc: self))
         renderer.scale = 1
         renderer.isOpaque = false
@@ -244,13 +274,29 @@ final class EditorDocument: ObservableObject {
         return nsImage.cgImage(forProposedRect: &rect, context: nil, hints: nil)
     }
 
-    func saveFlattened() {
-        guard let image = renderFinal() else { return }
-        Exporter.save(image: image, scale: scale)
+    /// Whether the export differs from the base image at all.
+    var needsFlattening: Bool {
+        !annotations.isEmpty || borderOn || shadowOn || cornerRadius > 0
+    }
+
+    @discardableResult
+    func saveFlattened() -> Bool {
+        guard let image = renderFinal() else { return false }
+        let saved = Exporter.save(image: image, scale: scale)
+        if saved { markExported() }
+        return saved
     }
 
     func copyFlattened() {
         guard let image = renderFinal() else { return }
         Exporter.copyToClipboard(image: image, scale: scale)
+        markExported()
+    }
+
+    /// Image for the share sheet; sharing counts as getting the work out.
+    func renderForShare() -> CGImage? {
+        let image = renderFinal()
+        if image != nil { markExported() }
+        return image
     }
 }

@@ -152,7 +152,7 @@ final class ScreenZoomController {
         }
     }
 
-    /// Entry point for the global draw hotkey (⌃⇧D) while zoom is active.
+    /// Entry point for the global draw hotkey (⇧⌘D) while zoom is active.
     func enterDraw(with tool: Tool = .pen) {
         perform(.enterDraw(tool))
     }

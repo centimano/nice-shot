@@ -26,6 +26,7 @@ final class CaptureCoordinator {
             // ScreenCaptureKit round-trip, so sequential snapshots would
             // delay the overlay by the sum instead of the slowest one.
             let showCursor = AppSettings.shared.showCursor
+            let excluded = CaptureExclusions.windowIDs
             let snapshots = await withTaskGroup(
                 of: (CGDirectDisplayID, CGImage)?.self,
                 returning: [CGDirectDisplayID: CGImage].self
@@ -36,7 +37,8 @@ final class CaptureCoordinator {
                         guard let image = try? await CaptureEngine.captureDisplay(
                             screen: screen,
                             cropTo: nil,
-                            showsCursor: showCursor
+                            showsCursor: showCursor,
+                            excludingWindowIDs: excluded
                         ) else { return nil }
                         return (id, image)
                     }
@@ -100,7 +102,8 @@ final class CaptureCoordinator {
                 let image = try await CaptureEngine.captureDisplay(
                     screen: screen,
                     cropTo: nil,
-                    showsCursor: false
+                    showsCursor: false,
+                    excludingWindowIDs: CaptureExclusions.windowIDs
                 )
                 guard self.screenDraw == nil else { return }
                 let capture = Capture(image: image, scale: screen.backingScaleFactor, sourceScreen: screen)
@@ -122,7 +125,8 @@ final class CaptureCoordinator {
                 let image = try await CaptureEngine.captureDisplay(
                     screen: screen,
                     cropTo: nil,
-                    showsCursor: false
+                    showsCursor: false,
+                    excludingWindowIDs: CaptureExclusions.windowIDs
                 )
                 guard self.screenZoom == nil, self.screenDraw == nil else { return }
                 let capture = Capture(image: image, scale: screen.backingScaleFactor, sourceScreen: screen)
@@ -171,6 +175,12 @@ final class CaptureCoordinator {
 
     // MARK: - Flow
 
+    /// True while any editor window holds annotations that haven't been
+    /// saved, copied, or shared.
+    var hasUnsavedEditors: Bool {
+        editors.contains { $0.hasUnsavedChanges }
+    }
+
     private func handleOverlay(_ result: SelectionOverlayController.Result) {
         overlay = nil
         defer { regionSnapshots = [:] }
@@ -187,9 +197,15 @@ final class CaptureCoordinator {
             } else {
                 Task { await performDisplayCapture(screen: screen, rect: rect) }
             }
-        case .window(let scWindow):
+        case .window(let scWindow, let refocused):
             Task {
                 do {
+                    if refocused {
+                        // The picker overlay took focus and just handed it
+                        // back; give the window a moment to redraw its title
+                        // bar as active before it's photographed.
+                        try await Task.sleep(nanoseconds: 150_000_000)
+                    }
                     let image = try await CaptureEngine.captureWindow(
                         scWindow,
                         showsCursor: AppSettings.shared.showCursor
@@ -212,7 +228,8 @@ final class CaptureCoordinator {
             let image = try await CaptureEngine.captureDisplay(
                 screen: screen,
                 cropTo: rect,
-                showsCursor: AppSettings.shared.showCursor
+                showsCursor: AppSettings.shared.showCursor,
+                excludingWindowIDs: CaptureExclusions.windowIDs
             )
             presentCapture(Capture(image: image, scale: screen.backingScaleFactor, sourceScreen: screen))
         } catch {
@@ -241,7 +258,11 @@ final class CaptureCoordinator {
     }
 
     private func showPanel(for capture: Capture, autoCopied: Bool) {
-        let panel = PostCapturePanel(capture: capture, stackIndex: panels.count, autoCopied: autoCopied)
+        // First free slot, so dismissing a lower panel doesn't make the next
+        // capture land on top of a surviving one.
+        let used = Set(panels.map(\.stackIndex))
+        let slot = (0...panels.count).first { !used.contains($0) } ?? panels.count
+        let panel = PostCapturePanel(capture: capture, stackIndex: slot, autoCopied: autoCopied)
         panel.onEdit = { [weak self, weak panel] in
             self?.openEditor(for: capture)
             if let panel { self?.removePanel(panel) }
@@ -260,7 +281,9 @@ final class CaptureCoordinator {
 
     private func openEditor(for capture: Capture, document: EditorDocument? = nil) {
         let editor = EditorWindow(capture: capture, document: document) { [weak self] closed in
-            self?.editors.removeAll { $0 === closed }
+            guard let self else { return }
+            self.editors.removeAll { $0 === closed }
+            if self.editors.isEmpty { EditorWindow.resetCascade() }
         }
         editors.append(editor)
     }

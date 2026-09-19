@@ -10,9 +10,11 @@ final class PostCapturePanel {
 
     private let capture: Capture
     private var panel: NSPanel!
+    let stackIndex: Int
 
     init(capture: Capture, stackIndex: Int = 0, autoCopied: Bool = false) {
         self.capture = capture
+        self.stackIndex = stackIndex
 
         let view = PostCaptureView(
             thumbnail: NSImage(cgImage: capture.image, size: capture.pointSize),
@@ -68,9 +70,11 @@ final class PostCapturePanel {
 
     func show() {
         panel.orderFrontRegardless()
+        CaptureExclusions.add(panel)
     }
 
     func close() {
+        CaptureExclusions.remove(panel)
         panel.orderOut(nil)
     }
 }

@@ -14,6 +14,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             systemSymbolName: "camera.viewfinder",
             accessibilityDescription: "Nice Shot"
         )
+        // A stable autosave name plus an explicit isVisible: macOS remembers
+        // a menu-bar item the user ⌘-dragged off (or hid in System Settings)
+        // and would otherwise keep it hidden on every launch, leaving the
+        // app with no visible UI at all.
+        item.autosaveName = "NiceShotStatusItem"
+        item.isVisible = true
         statusItem = item
 
         applyHotkeySettings()
@@ -27,6 +33,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func hotkeysChanged() {
         applyHotkeySettings()
+    }
+
+    /// ⌘Q with unsaved annotations in an editor gets a confirmation instead
+    /// of silently discarding them.
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        guard coordinator.hasUnsavedEditors else { return .terminateNow }
+        NSApp.activate(ignoringOtherApps: true)
+        let alert = NSAlert()
+        alert.messageText = "Quit Nice Shot?"
+        alert.informativeText = "An editor window has annotations that haven't been saved or copied. They will be lost."
+        alert.addButton(withTitle: "Cancel")
+        alert.addButton(withTitle: "Quit Anyway")
+        return alert.runModal() == .alertSecondButtonReturn ? .terminateNow : .terminateCancel
     }
 
     /// Opening the app while it's already running (e.g. double-clicking it in
@@ -45,26 +64,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let settings = AppSettings.shared
         let manager = HotkeyManager.shared
         manager.unregisterAll()
-        manager.register(
-            keyCode: settings.regionHotkey.keyCode,
-            modifiers: settings.regionHotkey.carbonModifiers
-        ) { [weak self] in self?.coordinator.captureRegion() }
-        manager.register(
-            keyCode: settings.windowHotkey.keyCode,
-            modifiers: settings.windowHotkey.carbonModifiers
-        ) { [weak self] in self?.coordinator.captureWindow() }
-        manager.register(
-            keyCode: settings.fullScreenHotkey.keyCode,
-            modifiers: settings.fullScreenHotkey.carbonModifiers
-        ) { [weak self] in self?.coordinator.captureFullScreen() }
-        manager.register(
-            keyCode: settings.screenDrawHotkey.keyCode,
-            modifiers: settings.screenDrawHotkey.carbonModifiers
-        ) { [weak self] in self?.coordinator.drawOnScreen() }
-        manager.register(
-            keyCode: settings.zoomHotkey.keyCode,
-            modifiers: settings.zoomHotkey.carbonModifiers
-        ) { [weak self] in self?.coordinator.zoomScreen() }
+
+        let bindings: [(name: String, hotkey: Hotkey, action: () -> Void)] = [
+            ("Capture Region", settings.regionHotkey, { [weak self] in self?.coordinator.captureRegion() }),
+            ("Capture Window", settings.windowHotkey, { [weak self] in self?.coordinator.captureWindow() }),
+            ("Capture Full Screen", settings.fullScreenHotkey, { [weak self] in self?.coordinator.captureFullScreen() }),
+            ("Draw on Screen", settings.screenDrawHotkey, { [weak self] in self?.coordinator.drawOnScreen() }),
+            ("Zoom Screen", settings.zoomHotkey, { [weak self] in self?.coordinator.zoomScreen() }),
+        ]
+        var failed: [String] = []
+        for binding in bindings {
+            let ok = manager.register(
+                keyCode: binding.hotkey.keyCode,
+                modifiers: binding.hotkey.carbonModifiers,
+                handler: binding.action
+            )
+            if !ok { failed.append(binding.name) }
+        }
+        // Settings shows these; the recorder refuses in-app duplicates, so a
+        // failure here means another app owns the combination.
+        if settings.unregisteredHotkeys != failed {
+            settings.unregisteredHotkeys = failed
+        }
 
         statusItem?.menu = buildStatusMenu()
     }
@@ -170,11 +191,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: - Actions
 
-    @objc private func captureRegion() { coordinator.captureRegion() }
+    // Modes that freeze the screen the instant they start wait for the
+    // status menu to finish fading out, so it isn't baked into the snapshot.
+    // Hotkeys call the coordinator directly and stay instant.
+    private func afterMenuCloses(_ action: @escaping () -> Void) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { action() }
+    }
+
+    @objc private func captureRegion() { afterMenuCloses { [weak self] in self?.coordinator.captureRegion() } }
     @objc private func captureWindow() { coordinator.captureWindow() }
     @objc private func captureFullScreen() { coordinator.captureFullScreen() }
-    @objc private func drawOnScreen() { coordinator.drawOnScreen() }
-    @objc private func zoomScreen() { coordinator.zoomScreen() }
+    @objc private func drawOnScreen() { afterMenuCloses { [weak self] in self?.coordinator.drawOnScreen() } }
+    @objc private func zoomScreen() { afterMenuCloses { [weak self] in self?.coordinator.zoomScreen() } }
     @objc private func timedCapture(_ sender: NSMenuItem) { coordinator.timedCapture(seconds: sender.tag) }
     @objc private func openSettings() { SettingsWindowController.shared.show() }
 

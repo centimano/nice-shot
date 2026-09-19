@@ -24,7 +24,10 @@ final class HotkeyManager {
         handlers.removeAll()
     }
 
-    func register(keyCode: UInt32, modifiers: UInt32, handler: @escaping Handler) {
+    /// Returns false when the system refused the combination — typically
+    /// because another app already owns it.
+    @discardableResult
+    func register(keyCode: UInt32, modifiers: UInt32, handler: @escaping Handler) -> Bool {
         installIfNeeded()
         let id = nextID
         nextID += 1
@@ -35,9 +38,11 @@ final class HotkeyManager {
         let status = RegisterEventHotKey(keyCode, modifiers, hotKeyID, GetApplicationEventTarget(), 0, &ref)
         if status == noErr, let ref {
             refs.append(ref)
-        } else {
-            NSLog("HotkeyManager: failed to register hotkey (status \(status))")
+            return true
         }
+        NSLog("HotkeyManager: failed to register hotkey (status \(status))")
+        handlers[id] = nil
+        return false
     }
 
     fileprivate func fire(id: UInt32) {

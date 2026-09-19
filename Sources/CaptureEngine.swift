@@ -29,7 +29,16 @@ enum CaptureError: LocalizedError {
 enum CaptureEngine {
     /// Capture a whole display, optionally cropped to `rect` — a rectangle in
     /// screen points with a top-left origin relative to that screen.
-    static func captureDisplay(screen: NSScreen, cropTo rect: CGRect?, showsCursor: Bool = false) async throws -> CGImage {
+    ///
+    /// `excludingWindowIDs` lists windows to leave out of the image — the
+    /// app's own transient UI (capture panels, countdown HUD), which would
+    /// otherwise be baked into the next screenshot.
+    static func captureDisplay(
+        screen: NSScreen,
+        cropTo rect: CGRect?,
+        showsCursor: Bool = false,
+        excludingWindowIDs: Set<CGWindowID> = []
+    ) async throws -> CGImage {
         let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
         guard let displayID = screen.displayID,
               let display = content.displays.first(where: { $0.displayID == displayID }) else {
@@ -37,7 +46,8 @@ enum CaptureEngine {
         }
 
         let scale = screen.backingScaleFactor
-        let filter = SCContentFilter(display: display, excludingWindows: [])
+        let excluded = content.windows.filter { excludingWindowIDs.contains($0.windowID) }
+        let filter = SCContentFilter(display: display, excludingWindows: excluded)
         let config = SCStreamConfiguration()
         config.width = Int(CGFloat(display.width) * scale)
         config.height = Int(CGFloat(display.height) * scale)
@@ -74,6 +84,22 @@ enum CaptureEngine {
         config.showsCursor = showsCursor
         config.captureResolution = .best
         return try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: config)
+    }
+}
+
+/// Registry of the app's own on-screen windows that must never appear in a
+/// capture (post-capture panels, the countdown HUD). Windows register while
+/// visible and unregister when hidden.
+@MainActor
+enum CaptureExclusions {
+    private(set) static var windowIDs: Set<CGWindowID> = []
+
+    static func add(_ window: NSWindow) {
+        windowIDs.insert(CGWindowID(window.windowNumber))
+    }
+
+    static func remove(_ window: NSWindow) {
+        windowIDs.remove(CGWindowID(window.windowNumber))
     }
 }
 

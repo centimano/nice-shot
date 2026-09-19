@@ -13,7 +13,9 @@ final class SelectionOverlayController {
     enum Result {
         case cancelled
         case region(NSScreen, CGRect) // rect in screen points, top-left origin relative to that screen
-        case window(SCWindow)
+        /// `refocused` is true when the overlay handed keyboard focus back
+        /// to the app that owns the picked window (it was frontmost before).
+        case window(SCWindow, refocused: Bool)
     }
 
     private let mode: Mode
@@ -70,8 +72,13 @@ final class SelectionOverlayController {
 
         // Hand focus back to whatever the user was working in, so the capture
         // looks exactly like their screen did and they can keep typing.
+        var result = result
         if previousApp?.processIdentifier != ProcessInfo.processInfo.processIdentifier {
             previousApp?.activate(options: [])
+            if case .window(let w, _) = result,
+               w.owningApplication?.processID == previousApp?.processIdentifier {
+                result = .window(w, refocused: true)
+            }
         }
         previousApp = nil
 
@@ -85,6 +92,15 @@ final class SelectionOverlayController {
 /// top-left of the primary display, y growing downward). Overlay views are
 /// flipped and local to one screen, so picker rects must be converted.
 enum ScreenGeometry {
+    /// Keep a drag point on screen: mouse events keep flowing to the overlay
+    /// after the cursor leaves it, with coordinates past the edges.
+    static func clamp(_ point: CGPoint, to bounds: CGRect) -> CGPoint {
+        CGPoint(
+            x: min(max(point.x, bounds.minX), bounds.maxX),
+            y: min(max(point.y, bounds.minY), bounds.maxY)
+        )
+    }
+
     static func localRect(globalCG frame: CGRect, screenFrame: CGRect, primaryHeight: CGFloat) -> CGRect {
         let originX = screenFrame.minX
         let originY = primaryHeight - screenFrame.maxY
@@ -241,7 +257,7 @@ private final class OverlayView: NSView {
 
     override func mouseDragged(with event: NSEvent) {
         guard mode == .region, dragStart != nil else { return }
-        dragCurrent = convert(event.locationInWindow, from: nil)
+        dragCurrent = ScreenGeometry.clamp(convert(event.locationInWindow, from: nil), to: bounds)
         lastMouse = dragCurrent
         needsDisplay = true
     }
@@ -250,7 +266,7 @@ private final class OverlayView: NSView {
         switch mode {
         case .region:
             guard let start = dragStart else { return }
-            let end = convert(event.locationInWindow, from: nil)
+            let end = ScreenGeometry.clamp(convert(event.locationInWindow, from: nil), to: bounds)
             let rect = CGRect(points: start, end)
             dragStart = nil
             dragCurrent = nil
@@ -262,7 +278,7 @@ private final class OverlayView: NSView {
         case .window:
             let p = convert(event.locationInWindow, from: nil)
             if let hit = pickableWindows.first(where: { $0.localFrame.contains(p) }) {
-                onResult(.window(hit.window))
+                onResult(.window(hit.window, refocused: false))
             } else {
                 onResult(.cancelled)
             }

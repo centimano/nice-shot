@@ -11,6 +11,10 @@
 # every rebuild — reusing the release identity for test builds confuses the
 # permission system. Note: don't run both apps at once; the second one loses
 # the global-hotkey registrations.
+#
+# The beta's bundle id is com.jeff.nice-shot.beta2 (not .beta): macOS 26
+# remembers, per bundle id, a menu-bar item that was dragged off the menu
+# bar, and the original beta id is stuck hidden on this machine (Sept 2026).
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -44,7 +48,7 @@ fi
 if [ $BETA -eq 1 ]; then
   VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$APP/Contents/Info.plist")
   /usr/libexec/PlistBuddy \
-    -c "Set :CFBundleIdentifier com.jeff.nice-shot.beta" \
+    -c "Set :CFBundleIdentifier com.jeff.nice-shot.beta2" \
     -c "Set :CFBundleName $APP_NAME" \
     -c "Set :CFBundleDisplayName $APP_NAME" \
     -c "Set :CFBundleShortVersionString $VERSION beta" \

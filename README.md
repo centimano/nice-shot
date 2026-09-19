@@ -23,13 +23,13 @@ third-party dependencies, single ~2 MB binary.
   (per display), and 3/5/10-second timed capture with an on-screen countdown.
   Region captures snapshot the screen the moment the overlay opens, so the
   result is instant and exact.
-- **Screen draw** (⌃⇧D): ZoomIt-style presentation mode — freeze the screen
+- **Screen draw** (⇧⌘D): ZoomIt-style presentation mode — freeze the screen
   and draw directly on it with the editor's tools, then ⌘C to copy, ⌘S to
   save, ⌘E to keep refining in the full editor, or Esc to walk away. Single
   letters switch tools (P pen, A arrow, B box, …) just like ZoomIt. W and K
   swap the frozen screen for a whiteboard or blackboard when you'd rather
   sketch on a clean surface.
-- **Frozen zoom** (⌃⇧Z): freeze the screen and magnify up to 8× — scroll or
+- **Frozen zoom** (⇧⌘Z): freeze the screen and magnify up to 8× — scroll or
   arrow keys zoom toward the cursor, moving the mouse pans, and ⌘C/⌘S/⌘E
   export exactly what's on screen. Press any drawing key to annotate the
   magnified view; double-click or Esc exits.
@@ -87,11 +87,11 @@ relaunch the app — a one-time macOS requirement.
 
 | Action | Default shortcut |
 |---|---|
-| Capture region (drag, Esc cancels) | ⌃⇧4 |
-| Capture window (hover + click) | ⌃⇧5 |
-| Capture full screen (display under mouse) | ⌃⇧3 |
-| Draw on screen (freeze + annotate) | ⌃⇧D |
-| Zoom into screen (freeze + magnify) | ⌃⇧Z |
+| Capture region (drag, Esc cancels) | ⇧⌘S |
+| Capture window (hover + click) | ⇧⌘W |
+| Capture full screen (display under mouse) | ⇧⌘F |
+| Draw on screen (freeze + annotate) | ⇧⌘D |
+| Zoom into screen (freeze + magnify) | ⇧⌘Z |
 | Timed capture (3/5/10 s) | menu bar |
 
 All shortcuts are configurable in Settings.

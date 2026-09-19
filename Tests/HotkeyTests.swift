@@ -6,15 +6,25 @@ import Carbon.HIToolbox
 @MainActor
 struct HotkeyTests {
     @Test func defaultShortcutsDisplay() {
-        #expect(Hotkey.defaultRegion.display == "⌃⇧4")
-        #expect(Hotkey.defaultWindow.display == "⌃⇧5")
-        #expect(Hotkey.defaultFullScreen.display == "⌃⇧3")
-        #expect(Hotkey.defaultScreenDraw.display == "⌃⇧D")
+        #expect(Hotkey.defaultRegion.display == "⇧⌘S")
+        #expect(Hotkey.defaultWindow.display == "⇧⌘W")
+        #expect(Hotkey.defaultFullScreen.display == "⇧⌘F")
+        #expect(Hotkey.defaultScreenDraw.display == "⇧⌘D")
+        #expect(Hotkey.defaultZoom.display == "⇧⌘Z")
     }
 
     @Test func defaultShortcutsAreDistinct() {
         let defaults: [Hotkey] = [.defaultRegion, .defaultWindow, .defaultFullScreen, .defaultScreenDraw]
         #expect(Set(defaults.map(\.display)).count == defaults.count)
+    }
+
+    @Test func conflictNamesTheActionAlreadyUsingTheCombo() {
+        let others: [(name: String, hotkey: Hotkey)] = [
+            ("Capture Window", .defaultWindow),
+            ("Zoom Screen", .defaultZoom),
+        ]
+        #expect(Hotkey.defaultWindow.conflict(among: others) == "Capture Window")
+        #expect(Hotkey.defaultRegion.conflict(among: others) == nil)
     }
 
     @Test func displayUsesStandardModifierOrder() {
