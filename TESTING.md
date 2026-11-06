@@ -49,6 +49,7 @@ SD9. Esc → closes without saving; focus returns to the previous app; no stray 
 SD10. Multi-monitor: mode opens on the display under the mouse.
 SD11. Menu bar → "Draw on Screen" starts the mode; Settings → "Draw on Screen" hotkey can be rebound and the new combo works.
 SD12. W → screenshot swaps to a solid whiteboard (drawings stay); W again brings the screenshot back; K does the same with a blackboard; ⌘Z undoes a board swap. The two small white/black buttons in the strip do the same.
+SD13. MacBook with a camera notch (built-in display) → ⇧⌘D → the tool strip is split into two pills, tools + colors to the left of the camera and the rest to the right; nothing is hidden behind the notch. On an external display the strip is the usual single bar, centered.
 
 ### Frozen zoom (v2)
 ZM1. ⇧⌘Z → screen freezes at 1× with a hint bar at the bottom; nothing looks different otherwise (it's showing the frozen screen 1:1).

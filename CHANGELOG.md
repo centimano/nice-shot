@@ -36,6 +36,11 @@ set to show the panel. The copy, save, and editor modes behave as before.
   moves, instead of repainting the whole screen each frame.
 - The magnifier loupe no longer lingers on a display the pointer has left.
 
+**Fixes**
+- Draw on Screen: on MacBooks with a camera notch, the tool strip splits
+  into two halves on either side of the camera (or sits just below it at
+  larger-text display settings) instead of hiding controls behind it.
+
 **Install**
 Unzip, drag `Nice Shot.app` to Applications, and replace the old one. The app
 is ad-hoc signed: right-click → Open the first time, and re-grant Screen
