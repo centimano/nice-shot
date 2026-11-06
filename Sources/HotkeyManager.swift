@@ -40,7 +40,7 @@ final class HotkeyManager {
             refs.append(ref)
             return true
         }
-        NSLog("HotkeyManager: failed to register hotkey (status \(status))")
+        Log.hotkeys.error("Failed to register hotkey (status \(status, privacy: .public))")
         handlers[id] = nil
         return false
     }

@@ -56,6 +56,11 @@ if [ $BETA -eq 1 ]; then
 fi
 
 # Ad-hoc sign so the Screen Recording permission sticks across rebuilds.
-codesign --force -s - "$APP"
+# --options runtime enables the hardened runtime (Apple's baseline for apps
+# distributed outside the App Store): it blocks code injection via
+# DYLD_* variables and unsigned libraries. The app needs no entitlements —
+# ScreenCaptureKit, global hotkeys, and saving all work under it.
+codesign --force --options runtime --sign - "$APP"
+codesign --verify --strict "$APP"
 
 echo "Built: $APP"

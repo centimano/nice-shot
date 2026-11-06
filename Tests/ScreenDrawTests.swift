@@ -90,3 +90,66 @@ struct ScreenDrawKeysTests {
         #expect(command(keyCode: 126) == nil, "arrow keys are not owned by the mode")
     }
 }
+
+/// Keeping the screen-draw strip clear of a MacBook's camera notch.
+struct NotchPlacementTests {
+    // A 14" MacBook Pro at its default resolution: 1512 pt wide, notch
+    // ~186 pt wide and 32 pt tall, centered.
+    private let notch = NotchGeometry(screenWidth: 1512, leftAreaWidth: 663, rightAreaWidth: 663, height: 32)!
+    private let screen = CGSize(width: 1512, height: 982)
+
+    @Test func noNotchMeansNoGeometry() {
+        #expect(NotchGeometry(screenWidth: 1512, leftAreaWidth: 663, rightAreaWidth: 663, height: 0) == nil)
+        #expect(NotchGeometry(screenWidth: 1000, leftAreaWidth: 600, rightAreaWidth: 600, height: 32) == nil)
+    }
+
+    @Test func notchSpansTheGapBetweenTheSideAreas() {
+        #expect(notch.minX == 663)
+        #expect(notch.maxX == 849)
+        #expect(notch.height == 32)
+    }
+
+    @Test func halvesFlankTheNotchWhenTheyFit() {
+        let f = NotchPlacement.frames(
+            left: CGSize(width: 450, height: 40),
+            right: CGSize(width: 360, height: 40),
+            container: screen,
+            notch: notch
+        )
+        #expect(f.flanking)
+        // Neither half overlaps the notch, both stay on screen.
+        #expect(f.left.maxX <= notch.minX - NotchPlacement.gap)
+        #expect(f.right.minX >= notch.maxX + NotchPlacement.gap)
+        #expect(f.left.minX >= NotchPlacement.margin)
+        #expect(f.right.maxX <= screen.width - NotchPlacement.margin)
+        // Same top position as the single strip on other screens.
+        #expect(f.left.minY == NotchPlacement.topInset)
+        #expect(f.right.minY == NotchPlacement.topInset)
+    }
+
+    @Test func halvesDropBelowTheNotchWhenTheSidesAreTooNarrow() {
+        // A "larger text" resolution: much less room beside the notch.
+        let tight = NotchGeometry(screenWidth: 1024, leftAreaWidth: 420, rightAreaWidth: 420, height: 32)!
+        let f = NotchPlacement.frames(
+            left: CGSize(width: 450, height: 40),
+            right: CGSize(width: 360, height: 40),
+            container: CGSize(width: 1024, height: 665),
+            notch: tight
+        )
+        #expect(!f.flanking)
+        #expect(f.left.minY >= tight.height)
+        #expect(f.right.minY >= tight.height)
+        #expect(f.right.minX >= f.left.maxX)
+        #expect(f.left.minX >= NotchPlacement.margin)
+    }
+
+    @Test func shorterHalfIsCenteredOnTheTallerOne() {
+        let f = NotchPlacement.frames(
+            left: CGSize(width: 300, height: 40),
+            right: CGSize(width: 300, height: 30),
+            container: screen,
+            notch: notch
+        )
+        #expect(f.left.midY == f.right.midY)
+    }
+}

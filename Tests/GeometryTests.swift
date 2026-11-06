@@ -123,4 +123,21 @@ struct GeometryTests {
             .clamped(to: CGSize(width: 200, height: 100))
         #expect(clamped == CGRect(x: 0, y: 0, width: 200, height: 100))
     }
+
+    // MARK: Loupe repaint area (partial redraws must cover everything it draws)
+
+    @Test func loupeDirtyRectCoversCircleAndBadge() {
+        let bounds = CGRect(x: 0, y: 0, width: 1000, height: 600)
+        for cursor in [CGPoint(x: 100, y: 100), CGPoint(x: 980, y: 580), CGPoint(x: 2, y: 598)] {
+            let origin = LoupeGeometry.origin(cursor: cursor, in: bounds)
+            let circle = CGRect(origin: origin, size: CGSize(width: LoupeGeometry.diameter, height: LoupeGeometry.diameter))
+            let dirty = LoupeGeometry.dirtyRect(cursor: cursor, in: bounds)
+            #expect(dirty.contains(circle.insetBy(dx: -2, dy: -2)))
+            // The coordinate badge sits up to 18 pt below the circle and is
+            // about 24 pt tall.
+            #expect(dirty.maxY >= circle.maxY + 30)
+            // Still a small fraction of the screen.
+            #expect(dirty.width * dirty.height < bounds.width * bounds.height / 10)
+        }
+    }
 }

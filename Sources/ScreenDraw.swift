@@ -110,7 +110,7 @@ final class ScreenDrawController {
         let fitScale = capture.image.width > 0
             ? screen.frame.width / CGFloat(capture.image.width)
             : 1 / doc.unit
-        let root = ScreenDrawView(doc: doc, fitScale: fitScale) { [weak self] command in
+        let root = ScreenDrawView(doc: doc, fitScale: fitScale, notch: NotchGeometry(screen: screen)) { [weak self] command in
             self?.perform(command)
         }
         let w = ScreenOverlayWindow(contentRect: screen.frame)
@@ -212,7 +212,9 @@ final class ScreenDrawController {
             NSEvent.removeMonitor(keyMonitor)
             self.keyMonitor = nil
         }
+        // close() (not just orderOut) frees the screen-sized backing store now.
         window?.orderOut(nil)
+        window?.close()
         window = nil
 
         // Hand focus back on plain dismissal; the editor handoff activates
@@ -224,6 +226,119 @@ final class ScreenDrawController {
         previousApp = nil
 
         completion(result)
+    }
+}
+
+// MARK: - Camera notch (pure placement math is unit-tested)
+
+/// The camera housing at the top of a notched MacBook display, in the
+/// screen's view coordinates (origin top-left, points).
+struct NotchGeometry: Equatable {
+    var minX: CGFloat
+    var maxX: CGFloat
+    var height: CGFloat
+
+    /// nil on screens without a notch (external displays, older Macs).
+    /// The unobscured areas beside the notch give its horizontal extent;
+    /// only their widths are used, so their coordinate origin doesn't matter.
+    @MainActor
+    init?(screen: NSScreen) {
+        let top = screen.safeAreaInsets.top
+        guard top > 0,
+              let left = screen.auxiliaryTopLeftArea,
+              let right = screen.auxiliaryTopRightArea else { return nil }
+        self.init(screenWidth: screen.frame.width, leftAreaWidth: left.width, rightAreaWidth: right.width, height: top)
+    }
+
+    init?(screenWidth: CGFloat, leftAreaWidth: CGFloat, rightAreaWidth: CGFloat, height: CGFloat) {
+        let minX = leftAreaWidth
+        let maxX = screenWidth - rightAreaWidth
+        guard height > 0, maxX > minX else { return nil }
+        self.minX = minX
+        self.maxX = maxX
+        self.height = height
+    }
+}
+
+/// Where the two halves of the draw strip go on a notched screen: flanking
+/// the notch when each fits beside it, otherwise side by side just below it.
+enum NotchPlacement {
+    /// Distance of the strip from the top of the screen (unchanged from the
+    /// single strip used on screens without a notch).
+    static let topInset: CGFloat = 12
+    /// Clearance between the strip and the notch, and between the halves.
+    static let gap: CGFloat = 12
+    /// Minimum distance from the screen's side edges.
+    static let margin: CGFloat = 8
+
+    static func frames(
+        left: CGSize,
+        right: CGSize,
+        container: CGSize,
+        notch: NotchGeometry
+    ) -> (left: CGRect, right: CGRect, flanking: Bool) {
+        let rowHeight = max(left.height, right.height)
+        let fitsLeft = left.width <= notch.minX - gap - margin
+        let fitsRight = right.width <= container.width - notch.maxX - gap - margin
+        if fitsLeft && fitsRight {
+            return (
+                CGRect(
+                    x: notch.minX - gap - left.width,
+                    y: topInset + (rowHeight - left.height) / 2,
+                    width: left.width, height: left.height
+                ),
+                CGRect(
+                    x: notch.maxX + gap,
+                    y: topInset + (rowHeight - right.height) / 2,
+                    width: right.width, height: right.height
+                ),
+                true
+            )
+        }
+        let top = max(topInset, notch.height + gap / 2)
+        let total = left.width + gap + right.width
+        let x = max(margin, (container.width - total) / 2)
+        return (
+            CGRect(x: x, y: top + (rowHeight - left.height) / 2, width: left.width, height: left.height),
+            CGRect(
+                x: x + left.width + gap,
+                y: top + (rowHeight - right.height) / 2,
+                width: right.width, height: right.height
+            ),
+            false
+        )
+    }
+}
+
+/// Lays out exactly two subviews (the strip halves) per `NotchPlacement`,
+/// filling the whole screen so positions are in screen coordinates.
+struct NotchAvoidingLayout: Layout {
+    let notch: NotchGeometry
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        proposal.replacingUnspecifiedDimensions()
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        guard subviews.count == 2 else {
+            for subview in subviews {
+                subview.place(at: CGPoint(x: bounds.midX, y: bounds.minY), anchor: .top, proposal: .unspecified)
+            }
+            return
+        }
+        let leftSize = subviews[0].sizeThatFits(.unspecified)
+        let rightSize = subviews[1].sizeThatFits(.unspecified)
+        let frames = NotchPlacement.frames(left: leftSize, right: rightSize, container: bounds.size, notch: notch)
+        subviews[0].place(
+            at: CGPoint(x: bounds.minX + frames.left.minX, y: bounds.minY + frames.left.minY),
+            anchor: .topLeading,
+            proposal: ProposedViewSize(leftSize)
+        )
+        subviews[1].place(
+            at: CGPoint(x: bounds.minX + frames.right.minX, y: bounds.minY + frames.right.minY),
+            anchor: .topLeading,
+            proposal: ProposedViewSize(rightSize)
+        )
     }
 }
 
@@ -248,14 +363,24 @@ final class ScreenOverlayWindow: NSWindow {
 struct ScreenDrawView: View {
     @ObservedObject var doc: EditorDocument
     let fitScale: CGFloat
+    /// The camera housing on a notched MacBook display, if this screen has one.
+    var notch: NotchGeometry? = nil
     let perform: (ScreenDrawCommand) -> Void
 
     var body: some View {
         ZStack(alignment: .top) {
             EditorCanvas(doc: doc, fitScale: fitScale)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            ScreenDrawStrip(doc: doc, perform: perform)
-                .padding(.top, 12)
+            if let notch {
+                // Keep the strip out from under the camera housing.
+                NotchAvoidingLayout(notch: notch) {
+                    ScreenDrawStrip(doc: doc, perform: perform, part: .toolsAndColors)
+                    ScreenDrawStrip(doc: doc, perform: perform, part: .actions)
+                }
+            } else {
+                ScreenDrawStrip(doc: doc, perform: perform)
+                    .padding(.top, NotchPlacement.topInset)
+            }
             VStack {
                 Spacer()
                 Text("⌘C copy · ⌘S save · ⌘E open in editor · esc close")
@@ -291,7 +416,39 @@ private struct ScreenDrawStrip: View {
 
     private let strokeWidths: [CGFloat] = [2, 4, 6, 10]
 
+    /// Which part of the strip to show. On a screen with a camera notch the
+    /// strip is shown as two halves, one on each side of the notch.
+    enum Part {
+        case whole
+        case toolsAndColors
+        case actions
+    }
+
+    var part: Part = .whole
+
     var body: some View {
+        Group {
+            switch part {
+            case .whole:
+                HStack(spacing: 10) {
+                    toolsAndColors
+                    actions
+                }
+            case .toolsAndColors:
+                toolsAndColors
+            case .actions:
+                actions
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 8)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+        .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(.white.opacity(0.15)))
+        .shadow(color: .black.opacity(0.35), radius: 12, y: 4)
+    }
+
+    /// Tool buttons and color swatches.
+    private var toolsAndColors: some View {
         HStack(spacing: 10) {
             HStack(spacing: 2) {
                 ForEach(Self.tools) { tool in
@@ -335,7 +492,12 @@ private struct ScreenDrawStrip: View {
                     .help(swatch.name)
                 }
             }
+        }
+    }
 
+    /// Boards, line weight, history, and the copy/save/editor/close actions.
+    private var actions: some View {
+        HStack(spacing: 10) {
             HStack(spacing: 5) {
                 boardButton(.white, help: "Whiteboard (W)")
                 boardButton(.black, help: "Blackboard (K)")
@@ -372,11 +534,6 @@ private struct ScreenDrawStrip: View {
             iconButton("pencil.and.outline", "Open in Editor (⌘E)") { perform(.openEditor) }
             iconButton("xmark.circle", "Close Without Saving (esc)") { perform(.exit) }
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 8)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
-        .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(.white.opacity(0.15)))
-        .shadow(color: .black.opacity(0.35), radius: 12, y: 4)
     }
 
     private func boardButton(_ style: BoardStyle, help: String) -> some View {

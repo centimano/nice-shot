@@ -1,0 +1,68 @@
+name: Release
+
+# Run by hand (Actions → Release → Run workflow) from main once a version is
+# ready. It reads the version from Packaging/Info.plist, runs the tests,
+# builds and signs Nice Shot.app, and publishes a GitHub release tagged
+# v<version> with the zip attached and that version's CHANGELOG.md section
+# as the notes.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: macos-15
+    timeout-minutes: 30
+    permissions:
+      contents: write # create the tag and release
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - name: Read version
+        run: |
+          version=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" Packaging/Info.plist)
+          if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Unexpected version '$version'"
+            exit 1
+          fi
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+      - name: Refuse to overwrite an existing release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "v$VERSION" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "::error::Release v$VERSION already exists. Bump the version in Packaging/Info.plist first."
+            exit 1
+          fi
+      - name: Run tests
+        run: swift run NiceShotTests
+      - name: Build Nice Shot.app
+        run: ./build.sh
+      - name: Package
+        run: ditto -c -k --keepParent "dist/Nice Shot.app" "dist/Nice-Shot-$VERSION.zip"
+      - name: Release notes from CHANGELOG.md
+        run: |
+          awk -v v="$VERSION" '
+            /^## / { if (found) exit; if ($2 == v) { found = 1; next } }
+            found { print }
+          ' CHANGELOG.md > notes.md
+          if ! [ -s notes.md ]; then
+            echo "::error::CHANGELOG.md has no '## $VERSION' section"
+            exit 1
+          fi
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "v$VERSION" "dist/Nice-Shot-$VERSION.zip" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "Nice Shot $VERSION" \
+            --notes-file notes.md
