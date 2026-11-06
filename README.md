@@ -10,11 +10,12 @@ third-party dependencies, single ~2 MB binary.
 > **Made with Claude.** This project — the spec, every line of code, the app
 > icon, the tests, and these docs — was written by **Claude Fable 5**,
 > Anthropic's Claude Code model, working under human direction. The logic core
-> and renderer are covered by 110 unit tests run on every push (see
+> and renderer are covered by unit tests run on every push (see
 > [TESTING.md](TESTING.md)); the capture UI is verified against a manual checklist.
 >
 > With v2 — screen draw, frozen zoom, and board modes — the original vision is
-> complete. *Claude takes a bow.* 🎩
+> complete. *Claude takes a bow.* 🎩 v2.2's security and performance pass and
+> the capture tray were also made with Claude Code.
 
 ## Features
 
@@ -35,6 +36,10 @@ third-party dependencies, single ~2 MB binary.
   magnified view; double-click or Esc exits.
 - **Post-capture panel**: every capture pops a small floating panel — edit,
   save, copy, share, or discard. It never steals focus from what you're doing.
+- **Capture tray**: take another shot while the panel is still up and both
+  move into one tray instead of stacking separate panels. Each capture gets
+  its own row of actions, plus Save All / Discard All, and the tray folds
+  down to a small "N Captures" stack when you want it out of the way.
 - **Markup editor**: arrows, lines, rectangles, ellipses, freehand pen,
   highlighter, text, speech-bubble callouts, auto-numbered step badges,
   pixelate-blur, and redact. An Office-style tool ribbon shows each tool's
@@ -70,12 +75,29 @@ Requires macOS 14+ and the Xcode Command Line Tools (no full Xcode needed).
 swift run NiceShotTests     # run the unit tests
 ```
 
+Every pull request also builds a ready-to-run **Nice Shot Beta.app** on
+GitHub: open the PR's *Checks* → *Tests* run and download **Nice-Shot-Beta**
+under *Artifacts*. To publish a version, bump it in `Packaging/Info.plist`,
+add its notes to `CHANGELOG.md`, merge to `main`, then run **Actions →
+Release → Run workflow**. It tests, builds, and publishes the release with the
+zip attached.
+
 Don't run the release and beta apps at the same time — whichever launches
 second can't register the global hotkeys.
 
 Move the app to `/Applications` if you want **Launch at login** to work
 reliably. The bundle is ad-hoc signed, so Gatekeeper on another Mac will warn
 on first open (right-click → Open).
+
+### Privacy & security
+
+- Everything stays on your Mac: no network access, no analytics, no
+  accounts. Captures go only where you send them (clipboard, a file, or the
+  share sheet).
+- Signed with Apple's hardened runtime. Not notarized (that needs a paid
+  Apple Developer account), hence the first-launch Gatekeeper prompt.
+- Images staged for the share sheet live in a private temporary folder that
+  is cleaned up automatically; quick-save never overwrites an existing file.
 
 ### Permissions
 
@@ -103,7 +125,7 @@ copies the flattened image, Return applies a pending crop and Esc cancels it.
 
 ```
 App/                @main entry point (thin executable)
-Sources/            Library: capture pipeline, settings, panel, editor
+Sources/            Library: capture pipeline, settings, panel & tray, editor
 Sources/Editor/     Annotation model, renderer, canvas, editor UI
 Tests/              Unit tests (see TESTING.md)
 Packaging/          Info.plist (icon is generated at build time)
