@@ -145,19 +145,21 @@ struct ThumbnailTests {
             == CGSize(width: 1, height: 1))
     }
 
-    @Test func makeDownscalesPixelsAndReportsPoints() throws {
+    @Test func downscalesPixelsAndReportsPoints() {
         let image = makeTestImage(width: 2000, height: 1000)
-        let thumb = Thumbnail.make(from: image, maxPoints: CGSize(width: 96, height: 60))
+        let thumb = Thumbnail.bitmap(from: image, maxPoints: CGSize(width: 96, height: 60))
         // 2× pixels for Retina, sized in points.
-        #expect(thumb.size == CGSize(width: 96, height: 48))
-        let rep = try #require(thumb.representations.first)
-        #expect(rep.pixelsWide == 192)
-        #expect(rep.pixelsHigh == 96)
+        #expect(thumb.image.width == 192)
+        #expect(thumb.image.height == 96)
+        #expect(thumb.pointSize == CGSize(width: 96, height: 48))
+        #expect(Thumbnail.make(from: image, maxPoints: CGSize(width: 96, height: 60)).size
+            == CGSize(width: 96, height: 48))
     }
 
     @Test func smallImagesAreNotCopied() {
         let image = makeTestImage(width: 100, height: 50)
-        let thumb = Thumbnail.make(from: image, maxPoints: CGSize(width: 300, height: 190))
-        #expect(thumb.size == CGSize(width: 50, height: 25))
+        let thumb = Thumbnail.bitmap(from: image, maxPoints: CGSize(width: 300, height: 190))
+        #expect(thumb.image === image)
+        #expect(thumb.pointSize == CGSize(width: 50, height: 25))
     }
 }

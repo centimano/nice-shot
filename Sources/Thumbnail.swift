@@ -20,15 +20,21 @@ enum Thumbnail {
     /// (crisp on Retina), returned as an NSImage sized in points. Falls back
     /// to wrapping the original if the downscale fails.
     static func make(from image: CGImage, maxPoints: CGSize) -> NSImage {
+        let thumb = bitmap(from: image, maxPoints: maxPoints)
+        return NSImage(cgImage: thumb.image, size: thumb.pointSize)
+    }
+
+    /// The pixels behind `make`: the downscaled bitmap and its size in points.
+    static func bitmap(from image: CGImage, maxPoints: CGSize) -> (image: CGImage, pointSize: CGSize) {
         let maxPixels = CGSize(width: maxPoints.width * 2, height: maxPoints.height * 2)
         let source = CGSize(width: image.width, height: image.height)
         let target = fittedPixelSize(for: source, maxPixels: maxPixels)
         let pointSize = CGSize(width: target.width / 2, height: target.height / 2)
 
         guard target != source, let scaled = downscale(image, to: target) else {
-            return NSImage(cgImage: image, size: pointSize)
+            return (image, pointSize)
         }
-        return NSImage(cgImage: scaled, size: pointSize)
+        return (scaled, pointSize)
     }
 
     static func downscale(_ image: CGImage, to size: CGSize) -> CGImage? {
