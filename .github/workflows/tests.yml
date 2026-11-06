@@ -4,13 +4,64 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
+
+# Least privilege: these jobs only read the repository.
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
     runs-on: macos-15
+    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      # Third-party actions are pinned to a full commit SHA (not a movable
+      # tag) so a compromised tag can't change what runs here.
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
       - name: Build app
         run: swift build
       - name: Run tests
         run: swift run NiceShotTests
+
+  # A ready-to-run "Nice Shot Beta.app" for trying out a pull request:
+  # download it from the run's Artifacts section.
+  beta-app:
+    name: Build beta app
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Build Nice Shot Beta.app
+        run: ./build.sh --beta
+      - name: Check signature (ad-hoc, hardened runtime)
+        run: |
+          codesign --verify --strict --verbose=2 "dist/Nice Shot Beta.app"
+          codesign --display --verbose=2 "dist/Nice Shot Beta.app" 2>&1 | tee codesign.txt
+          grep -Eq "flags=0x[0-9a-f]+\(.*runtime.*\)" codesign.txt
+      - name: Launch smoke test
+        run: |
+          "dist/Nice Shot Beta.app/Contents/MacOS/NiceShot" &
+          pid=$!
+          sleep 8
+          if ! kill -0 "$pid" 2>/dev/null; then
+            echo "::error::The app exited during launch"
+            wait "$pid" || true
+            exit 1
+          fi
+          kill "$pid"
+      - name: Package
+        # ditto keeps the bundle's permissions and signature intact.
+        run: ditto -c -k --keepParent "dist/Nice Shot Beta.app" "dist/Nice-Shot-Beta.zip"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: Nice-Shot-Beta
+          path: dist/Nice-Shot-Beta.zip
+          retention-days: 30

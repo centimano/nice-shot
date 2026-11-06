@@ -17,11 +17,13 @@ struct Capture {
 enum CaptureError: LocalizedError {
     case displayNotFound
     case cropFailed
+    case encodeFailed
 
     var errorDescription: String? {
         switch self {
         case .displayNotFound: return "Could not find the display to capture."
         case .cropFailed: return "Could not crop the captured image."
+        case .encodeFailed: return "Could not encode the image."
         }
     }
 }
