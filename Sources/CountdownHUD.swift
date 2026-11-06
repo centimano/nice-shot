@@ -53,6 +53,7 @@ final class CountdownHUD {
             timer = nil
             CaptureExclusions.remove(panel)
             panel.orderOut(nil)
+            panel.close()
             // Let the HUD vanish from screen before the capture happens.
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [onFire] in
                 onFire()

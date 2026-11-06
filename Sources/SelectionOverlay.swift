@@ -67,7 +67,11 @@ final class SelectionOverlayController {
             NSEvent.removeMonitor(keyMonitor)
             self.keyMonitor = nil
         }
-        overlays.forEach { $0.orderOut(nil) }
+        // close() frees each screen-sized backing store immediately.
+        overlays.forEach {
+            $0.orderOut(nil)
+            $0.close()
+        }
         overlays.removeAll()
 
         // Hand focus back to whatever the user was working in, so the capture
@@ -134,6 +138,21 @@ enum LoupeGeometry {
         return rect
     }
 
+    /// Everything the loupe paints for a cursor position — the magnifier
+    /// circle plus the pixel-coordinate badge under it — padded for strokes.
+    /// Used to repaint only this area as the cursor moves.
+    static func dirtyRect(cursor: CGPoint, in bounds: CGRect) -> CGRect {
+        let loupe = CGRect(origin: origin(cursor: cursor, in: bounds), size: CGSize(width: diameter, height: diameter))
+        let badgeHalfWidth: CGFloat = 110
+        return CGRect(
+            x: loupe.midX - badgeHalfWidth,
+            y: loupe.minY,
+            width: badgeHalfWidth * 2,
+            height: loupe.height + 50
+        )
+        .insetBy(dx: -4, dy: -4)
+    }
+
     /// Loupe placement: offset from the cursor, flipping to the other side
     /// near screen edges so it stays fully visible.
     static func origin(cursor: CGPoint, in bounds: CGRect) -> CGPoint {
@@ -165,6 +184,9 @@ private final class OverlayWindow: NSWindow {
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         ignoresMouseEvents = false
         acceptsMouseMovedEvents = true
+        // Owned by the controller's array; closing must not also release it
+        // (AppKit's legacy release-on-close would over-release under ARC).
+        isReleasedWhenClosed = false
         contentView = OverlayView(screen: screen, mode: mode, scWindows: scWindows, snapshot: snapshot, onResult: onResult)
     }
 
@@ -235,16 +257,42 @@ private final class OverlayView: NSView {
         }
     }
 
+    // Mouse moves arrive at display refresh rate, and this view covers the
+    // whole screen, so repaint only what changed: the picker redraws when
+    // the hovered window changes, the loupe only its own neighborhood.
     override func mouseMoved(with event: NSEvent) {
         let p = convert(event.locationInWindow, from: nil)
+        let previous = lastMouse
         lastMouse = p
-        if mode == .window {
+        switch mode {
+        case .window:
             let hit = pickableWindows.first { $0.localFrame.contains(p) }
             if hit?.window.windowID != hovered?.window.windowID {
                 hovered = hit
+                needsDisplay = true
+            }
+        case .region:
+            if dragStart != nil {
+                needsDisplay = true
+            } else {
+                invalidateLoupe(at: previous)
+                invalidateLoupe(at: p)
             }
         }
-        needsDisplay = true
+    }
+
+    /// The loupe disappears from a display the cursor has left (it used to
+    /// linger there on multi-monitor setups).
+    override func mouseExited(with event: NSEvent) {
+        guard mode == .region, dragStart == nil else { return }
+        let previous = lastMouse
+        lastMouse = nil
+        invalidateLoupe(at: previous)
+    }
+
+    private func invalidateLoupe(at cursor: CGPoint?) {
+        guard let cursor, snapshot != nil else { return }
+        setNeedsDisplay(LoupeGeometry.dirtyRect(cursor: cursor, in: bounds))
     }
 
     override func mouseDown(with event: NSEvent) {
@@ -288,6 +336,10 @@ private final class OverlayView: NSView {
     // MARK: Drawing
 
     override func draw(_ dirtyRect: NSRect) {
+        // Partial redraws (loupe moves) must start from transparent, or the
+        // translucent dim would build up darker with every repaint.
+        NSColor.clear.setFill()
+        dirtyRect.fill(using: .copy)
         NSColor.black.withAlphaComponent(0.3).setFill()
         bounds.fill()
 

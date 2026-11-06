@@ -212,7 +212,9 @@ final class ScreenDrawController {
             NSEvent.removeMonitor(keyMonitor)
             self.keyMonitor = nil
         }
+        // close() (not just orderOut) frees the screen-sized backing store now.
         window?.orderOut(nil)
+        window?.close()
         window = nil
 
         // Hand focus back on plain dismissal; the editor handoff activates

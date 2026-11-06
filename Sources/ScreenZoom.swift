@@ -225,6 +225,7 @@ final class ScreenZoomController {
         completion(result)
 
         window?.orderOut(nil)
+        window?.close()
         window = nil
         surface = nil
 
