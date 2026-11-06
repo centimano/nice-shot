@@ -6,7 +6,10 @@ import ScreenCaptureKit
 @MainActor
 final class CaptureCoordinator {
     private var overlay: SelectionOverlayController?
-    private var panels: [PostCapturePanel] = []
+    /// The classic panel for a lone capture…
+    private var panel: PostCapturePanel?
+    /// …and the tray that replaces it once captures pile up.
+    private var tray: CaptureTray?
     private var countdown: CountdownHUD?
     private var editors: [EditorWindow] = []
     private var screenDraw: ScreenDrawController?
@@ -257,26 +260,63 @@ final class CaptureCoordinator {
         }
     }
 
+    /// One capture gets the classic panel. A capture arriving while that
+    /// panel is still up moves both into a tray instead of stacking a second
+    /// panel; later captures join the tray until it has been emptied.
     private func showPanel(for capture: Capture, autoCopied: Bool) {
-        // First free slot, so dismissing a lower panel doesn't make the next
-        // capture land on top of a surviving one.
-        let used = Set(panels.map(\.stackIndex))
-        let slot = (0...panels.count).first { !used.contains($0) } ?? panels.count
-        let panel = PostCapturePanel(capture: capture, stackIndex: slot, autoCopied: autoCopied)
+        switch CaptureRouting.destination(panelShowing: panel != nil, trayShowing: tray != nil) {
+        case .panel:
+            showSinglePanel(for: capture, autoCopied: autoCopied)
+        case .startTray:
+            let tray = makeTray(screen: panel?.capture.sourceScreen ?? capture.sourceScreen)
+            if let existing = panel {
+                tray.add(existing.capture, autoCopied: existing.autoCopied, id: existing.id)
+                existing.close()
+                panel = nil
+            }
+            tray.add(capture, autoCopied: autoCopied)
+            tray.show()
+        case .tray:
+            tray?.add(capture, autoCopied: autoCopied)
+        }
+    }
+
+    private func showSinglePanel(for capture: Capture, autoCopied: Bool) {
+        let panel = PostCapturePanel(capture: capture, autoCopied: autoCopied)
         panel.onEdit = { [weak self, weak panel] in
-            self?.openEditor(for: capture)
-            if let panel { self?.removePanel(panel) }
+            guard let self, let panel else { return }
+            self.dismissPanel(panel)
+            self.openEditor(for: capture)
         }
         panel.onDismiss = { [weak self, weak panel] in
-            if let panel { self?.removePanel(panel) }
+            guard let self, let panel else { return }
+            self.dismissPanel(panel)
         }
-        panels.append(panel)
+        self.panel = panel
         panel.show()
     }
 
-    private func removePanel(_ panel: PostCapturePanel) {
-        panel.close()
-        panels.removeAll { $0 === panel }
+    /// The panel's capture was dealt with. If the panel had meanwhile been
+    /// folded into a tray (a save dialog was open when the next capture
+    /// arrived), the capture leaves the tray instead.
+    private func dismissPanel(_ dismissed: PostCapturePanel) {
+        if panel === dismissed {
+            dismissed.close()
+            panel = nil
+        } else {
+            tray?.remove(id: dismissed.id)
+        }
+    }
+
+    private func makeTray(screen: NSScreen?) -> CaptureTray {
+        let tray = CaptureTray(screen: screen)
+        tray.onEdit = { [weak self] capture in self?.openEditor(for: capture) }
+        tray.onEmpty = { [weak self, weak tray] in
+            guard let self, let tray, self.tray === tray else { return }
+            self.tray = nil
+        }
+        self.tray = tray
+        return tray
     }
 
     private func openEditor(for capture: Capture, document: EditorDocument? = nil) {
@@ -312,6 +352,7 @@ final class CaptureCoordinator {
     }
 
     private func showError(_ error: Error) {
+        Log.capture.error("Capture failed: \(error.localizedDescription)")
         NSApp.activate(ignoringOtherApps: true)
         let alert = NSAlert()
         alert.messageText = "Capture Failed"

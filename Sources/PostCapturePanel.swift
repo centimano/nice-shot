@@ -1,23 +1,30 @@
 import AppKit
 import SwiftUI
 
-/// The floating panel that appears after every capture: thumbnail plus
+/// The floating panel that appears after a single capture: thumbnail plus
 /// Edit / Save / Copy / dismiss. Non-activating so it never steals focus.
+/// A second capture while it's showing moves both into a `CaptureTray`.
 @MainActor
 final class PostCapturePanel {
     var onEdit: (() -> Void)?
+    /// Called when the capture has been dealt with (saved, copied, or
+    /// discarded) — including a save that finishes after the capture was
+    /// already handed over to the tray.
     var onDismiss: (() -> Void)?
 
-    private let capture: Capture
+    /// Identity shared with the tray item this capture becomes if the panel
+    /// is folded into a tray.
+    let id = UUID()
+    let capture: Capture
+    let autoCopied: Bool
     private var panel: NSPanel!
-    let stackIndex: Int
 
-    init(capture: Capture, stackIndex: Int = 0, autoCopied: Bool = false) {
+    init(capture: Capture, autoCopied: Bool = false) {
         self.capture = capture
-        self.stackIndex = stackIndex
+        self.autoCopied = autoCopied
 
         let view = PostCaptureView(
-            thumbnail: NSImage(cgImage: capture.image, size: capture.pointSize),
+            thumbnail: Thumbnail.make(from: capture.image, maxPoints: CGSize(width: 300, height: 190)),
             sizeLabel: "\(capture.image.width) × \(capture.image.height) px",
             saveLabel: AppSettings.shared.askWhereToSave ? "Save…" : "Save",
             autoCopied: autoCopied,
@@ -50,9 +57,7 @@ final class PostCapturePanel {
 
         let screen = capture.sourceScreen ?? NSScreen.main
         if let vf = screen?.visibleFrame {
-            // Stack additional captures upward so they don't cover each other.
-            let yOffset = CGFloat(min(stackIndex, 6)) * 36
-            panel.setFrameOrigin(CGPoint(x: vf.maxX - size.width - 16, y: vf.minY + 16 + yOffset))
+            panel.setFrameOrigin(FloatingPanelPlacement.origin(windowSize: size, visibleFrame: vf))
         }
     }
 
@@ -76,6 +81,18 @@ final class PostCapturePanel {
     func close() {
         CaptureExclusions.remove(panel)
         panel.orderOut(nil)
+        panel.close()
+    }
+}
+
+/// Where the capture panel and tray sit: the bottom-right corner of the
+/// screen's usable area. Both share it so the tray replaces the panel in
+/// place.
+enum FloatingPanelPlacement {
+    static let margin: CGFloat = 16
+
+    static func origin(windowSize: CGSize, visibleFrame vf: CGRect) -> CGPoint {
+        CGPoint(x: vf.maxX - windowSize.width - margin, y: vf.minY + margin)
     }
 }
 
