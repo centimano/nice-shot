@@ -46,7 +46,7 @@ struct ShareButton: View {
 enum ShareFiles {
     static let maxAge: TimeInterval = 60 * 60
 
-    static var directory: URL {
+    nonisolated static var directory: URL {
         FileManager.default.temporaryDirectory
             .appendingPathComponent("NiceShot-Share", isDirectory: true)
     }
